@@ -14,29 +14,41 @@ hero:
       icon: external
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 
 ## このサイトの構成
 
-<CardGrid stagger>
-  <Card title="解説 (技術領域)" icon="setting">
-    暗号・認証・ネットワーク・Web セキュリティを、攻撃の流れまで含めて図解。
-  </Card>
-  <Card title="解説 (法令・規格)" icon="document">
-    個人情報保護法、不正アクセス禁止法、ISMS、NIST SP800 系を試験で問われる切り口でまとめます。
-  </Card>
-  <Card title="解説 (マネジメント)" icon="puzzle">
-    CSIRT 体制、インシデント対応の手順、リスクアセスメント、監査の論点を整理。
-  </Card>
-  <Card title="午後問題対策" icon="pencil">
-    時間配分、問題文の読み方、記述式の書き方を、実問題で演習。
-  </Card>
-  <Card title="過去問 (H21〜R7)" icon="open-book">
-    IPA が公開している全過去問を解説付きで掲載。出典明記の上で再構成。
-  </Card>
-  <Card title="類似テスト" icon="rocket">
-    本番形式に揃えた独自の演習問題と模範解答。弱点分野を集中演習。
-  </Card>
+<CardGrid>
+  <LinkCard
+    title="解説 (技術領域)"
+    description="暗号・認証・ネットワーク・Web セキュリティを、攻撃の流れまで含めて図解。"
+    href="/SecuritySpecialist/topics/crypto-auth/"
+  />
+  <LinkCard
+    title="解説 (法令・規格)"
+    description="個人情報保護法、不正アクセス禁止法、ISMS、NIST SP800 系を試験で問われる切り口でまとめます。"
+    href="/SecuritySpecialist/topics/law-pipa/"
+  />
+  <LinkCard
+    title="解説 (マネジメント)"
+    description="CSIRT 体制、インシデント対応の手順、リスクアセスメント、監査の論点を整理。"
+    href="/SecuritySpecialist/topics/csirt/"
+  />
+  <LinkCard
+    title="午後問題対策"
+    description="時間配分、問題文の読み方、記述式の書き方を、実問題で演習。"
+    href="/SecuritySpecialist/afternoon/strategy/"
+  />
+  <LinkCard
+    title="過去問 (H21〜R7)"
+    description="IPA が公開している全過去問を解説付きで掲載。出典明記の上で再構成。"
+    href="/SecuritySpecialist/past-exams/"
+  />
+  <LinkCard
+    title="類似テスト"
+    description="本番形式に揃えた独自の演習問題と模範解答。弱点分野を集中演習。"
+    href="/SecuritySpecialist/practice/"
+  />
 </CardGrid>
 
 ## 過去問掲載について
