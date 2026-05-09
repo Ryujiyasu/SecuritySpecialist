@@ -1,70 +1,340 @@
-/* SC 学習サイト カスタムスタイル */
+/* ===================================================================
+ * SC 学習サイト デザインシステム
+ * 詳細は /DESIGN.md
+ * =================================================================== */
 
+/* --- カラー & タイポグラフィのトークン --- */
 :root {
-  --sl-font: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI',
-             'Meiryo', system-ui, -apple-system, sans-serif;
-  --sl-font-mono: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+  /* ライトモード */
+  --sc-accent: #0d7a8a;
+  --sc-accent-high: #095560;
+  --sc-accent-soft: rgba(13, 122, 138, 0.08);
+  --sc-accent-soft-strong: rgba(13, 122, 138, 0.14);
+  --sc-warn: #c14545;
+  --sc-warn-soft: rgba(193, 69, 69, 0.07);
+  --sc-ok: #3a7a3a;
+  --sc-ok-soft: rgba(58, 122, 58, 0.08);
+  --sc-card: #ffffff;
+  --sc-card-border: rgba(15, 23, 42, 0.08);
+  --sc-muted: #5a6470;
+  --sc-bg-paper: #fafaf7;
+
+  --sl-font: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI",
+    "Meiryo", system-ui, -apple-system, sans-serif;
+  --sl-font-mono: "JetBrains Mono", "SF Mono", "Menlo", "Consolas", monospace;
 }
 
-/* 重要ポイント枠 */
+:root[data-theme="dark"] {
+  --sc-accent: #5fc9d9;
+  --sc-accent-high: #8fdee9;
+  --sc-accent-soft: rgba(95, 201, 217, 0.10);
+  --sc-accent-soft-strong: rgba(95, 201, 217, 0.18);
+  --sc-warn: #ff7676;
+  --sc-warn-soft: rgba(255, 118, 118, 0.10);
+  --sc-ok: #6fc26f;
+  --sc-ok-soft: rgba(111, 194, 111, 0.10);
+  --sc-card: rgba(255, 255, 255, 0.03);
+  --sc-card-border: rgba(255, 255, 255, 0.08);
+  --sc-muted: #9aa3ad;
+  --sc-bg-paper: #0e1217;
+}
+
+/* --- 全体の調整 --- */
+body {
+  font-feature-settings: "palt" 1; /* 日本語の詰め */
+  letter-spacing: 0.01em;
+}
+
+.sl-markdown-content {
+  line-height: 1.85;
+}
+
+.sl-markdown-content :is(h1, h2, h3, h4) {
+  letter-spacing: -0.01em;
+}
+
+.sl-markdown-content h2 {
+  margin-top: 2.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--sc-card-border);
+  position: relative;
+}
+.sl-markdown-content h2::before {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4rem;
+  height: 2px;
+  background: linear-gradient(90deg, var(--sc-accent), transparent);
+}
+
+.sl-markdown-content h3 {
+  margin-top: 1.8rem;
+  color: var(--sc-accent-high);
+}
+
+.sl-markdown-content a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 120ms ease;
+}
+
+.sl-markdown-content a:hover {
+  color: var(--sc-accent-high);
+}
+
+/* --- 重要ポイント --- */
 .sc-key {
-  border-left: 4px solid var(--sl-color-accent);
-  padding: 0.75rem 1rem;
-  background: var(--sl-color-bg-nav);
-  margin: 1rem 0;
-  border-radius: 0 4px 4px 0;
+  border-left: 4px solid var(--sc-accent);
+  padding: 1rem 1.25rem;
+  background: var(--sc-accent-soft);
+  margin: 1.5rem 0;
+  border-radius: 0 8px 8px 0;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .sc-key::before {
-  content: '🔑 重要ポイント';
-  font-weight: bold;
-  color: var(--sl-color-accent-high);
+  content: "🔑 重要ポイント";
+  font-weight: 700;
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+  color: var(--sc-accent-high);
   display: block;
   margin-bottom: 0.5rem;
+  text-transform: uppercase;
 }
 
-/* よくある誤答 */
+/* --- 罠 --- */
 .sc-trap {
-  border-left: 4px solid #d96c6c;
-  padding: 0.75rem 1rem;
-  background: rgba(217, 108, 108, 0.06);
-  margin: 1rem 0;
-  border-radius: 0 4px 4px 0;
+  border-left: 4px solid var(--sc-warn);
+  padding: 1rem 1.25rem;
+  background: var(--sc-warn-soft);
+  margin: 1.5rem 0;
+  border-radius: 0 8px 8px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .sc-trap::before {
-  content: '⚠️ 受験生がハマる罠';
-  font-weight: bold;
-  color: #c14545;
+  content: "⚠️ 受験生がハマる罠";
+  font-weight: 700;
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+  color: var(--sc-warn);
   display: block;
   margin-bottom: 0.5rem;
+  text-transform: uppercase;
 }
 
-/* 表のセンタリングと境界 */
-.sl-markdown-content table {
-  display: table;
-  width: 100%;
-}
-
-.sl-markdown-content th {
-  background: var(--sl-color-bg-nav);
-}
-
-/* 解答例ボックス */
+/* --- 解答ボックス --- */
 details.sc-answer {
-  border: 1px solid var(--sl-color-gray-5);
-  border-radius: 6px;
-  padding: 0.5rem 1rem;
+  border: 1px solid var(--sc-card-border);
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
   margin: 1rem 0;
-  background: var(--sl-color-bg-nav);
+  background: var(--sc-card);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+details.sc-answer:hover {
+  border-color: var(--sc-accent);
 }
 
 details.sc-answer > summary {
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
   padding: 0.25rem 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+details.sc-answer > summary::before {
+  content: "🎯";
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+details.sc-answer > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.sc-answer > summary::after {
+  content: "▶";
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--sc-muted);
+  transition: transform 200ms ease;
+}
+
+details.sc-answer[open] > summary::after {
+  transform: rotate(90deg);
 }
 
 details.sc-answer[open] {
-  border-color: var(--sl-color-accent);
+  border-color: var(--sc-accent);
+  box-shadow: 0 4px 12px var(--sc-accent-soft);
+}
+
+/* --- テーブルの整形 --- */
+.sl-markdown-content table {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--sc-card-border);
+}
+
+.sl-markdown-content thead {
+  background: var(--sc-accent-soft);
+}
+
+.sl-markdown-content th {
+  font-weight: 700;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid var(--sc-accent);
+}
+
+.sl-markdown-content td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--sc-card-border);
+}
+
+.sl-markdown-content tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.sl-markdown-content tbody tr:hover {
+  background: var(--sc-accent-soft);
+  transition: background 120ms ease;
+}
+
+/* --- コードブロック --- */
+.sl-markdown-content :not(pre) > code {
+  background: var(--sc-accent-soft);
+  color: var(--sc-accent-high);
+  padding: 0.125em 0.375em;
+  border-radius: 4px;
+  font-size: 0.875em;
+  font-weight: 500;
+}
+
+/* --- ヒーロー (top page) --- */
+.hero {
+  padding: 4rem 1rem 3rem;
+}
+
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  background: linear-gradient(135deg, var(--sc-accent-high), var(--sc-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.02em;
+}
+
+.hero .tagline {
+  font-size: 1.125rem;
+  color: var(--sc-muted);
+}
+
+/* --- カードグリッド --- */
+.card-grid .card {
+  border: 1px solid var(--sc-card-border);
+  border-radius: 12px;
+  background: var(--sc-card);
+  transition: border-color 200ms ease, transform 200ms ease,
+    box-shadow 200ms ease;
+}
+
+.card-grid .card:hover {
+  border-color: var(--sc-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--sc-accent-soft);
+}
+
+/* --- ナビゲーション (sidebar) のホバー --- */
+.sidebar a:hover {
+  background: var(--sc-accent-soft);
+  color: var(--sc-accent-high);
+}
+
+/* --- Mermaid 図のラッパ --- */
+pre.mermaid {
+  background: transparent !important;
+  padding: 1rem 0 !important;
+  border: none !important;
+  text-align: center;
+  overflow-x: auto;
+  margin: 1.5rem 0 !important;
+}
+
+pre.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* --- 見出しアンカーリンクの微調整 --- */
+.sl-markdown-content :is(h1, h2, h3, h4) a {
+  text-decoration: none;
+}
+
+/* --- スクロールバー --- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sc-accent) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--sc-accent);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* --- フォーカス時のアクセント --- */
+:focus-visible {
+  outline: 2px solid var(--sc-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* --- 印刷時の最適化 (試験前印刷用) --- */
+@media print {
+  :root {
+    --sc-bg-paper: #fff;
+  }
+  .sc-key,
+  .sc-trap,
+  details.sc-answer[open] {
+    box-shadow: none;
+    border: 1px solid #aaa;
+  }
+  details.sc-answer:not([open]) {
+    display: none;
+  }
+}
+
+/* --- モバイル向け調整 --- */
+@media (max-width: 50em) {
+  .sl-markdown-content {
+    line-height: 1.75;
+  }
+  .sc-key,
+  .sc-trap {
+    padding: 0.875rem 1rem;
+    margin: 1rem 0;
+  }
 }

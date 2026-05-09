@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" font-family="system-ui, -apple-system, 'Hiragino Sans', sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0e1217"/>
+      <stop offset="100%" stop-color="#0d3a44"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#5fc9d9"/>
+      <stop offset="100%" stop-color="#0d7a8a"/>
+    </linearGradient>
+    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#5fc9d9" stroke-width="0.5" opacity="0.15"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- Decorative shield icon -->
+  <g transform="translate(100, 200)" opacity="0.6">
+    <path d="M 80 0 L 160 30 L 160 130 Q 160 200 80 240 Q 0 200 0 130 L 0 30 Z"
+          fill="none" stroke="url(#accent)" stroke-width="3"/>
+    <path d="M 50 110 L 75 140 L 120 80" fill="none" stroke="#5fc9d9" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Title -->
+  <text x="320" y="240" font-size="68" font-weight="700" fill="#ffffff" letter-spacing="-1">情報処理安全確保支援士</text>
+  <text x="320" y="320" font-size="40" font-weight="500" fill="#5fc9d9">学習サイト</text>
+
+  <!-- Subtitle -->
+  <text x="320" y="400" font-size="26" fill="#9aa3ad">合格に必要な「考え方」と「型」を、図と過去問で身につける</text>
+
+  <!-- Tag chips -->
+  <g font-size="22" font-weight="500">
+    <rect x="320" y="450" width="160" height="44" rx="22" fill="rgba(95,201,217,0.15)" stroke="#5fc9d9" stroke-width="1"/>
+    <text x="400" y="479" fill="#5fc9d9" text-anchor="middle">過去問解説</text>
+
+    <rect x="500" y="450" width="160" height="44" rx="22" fill="rgba(95,201,217,0.15)" stroke="#5fc9d9" stroke-width="1"/>
+    <text x="580" y="479" fill="#5fc9d9" text-anchor="middle">図解で整理</text>
+
+    <rect x="680" y="450" width="160" height="44" rx="22" fill="rgba(95,201,217,0.15)" stroke="#5fc9d9" stroke-width="1"/>
+    <text x="760" y="479" fill="#5fc9d9" text-anchor="middle">類似テスト</text>
+
+    <rect x="860" y="450" width="180" height="44" rx="22" fill="rgba(95,201,217,0.15)" stroke="#5fc9d9" stroke-width="1"/>
+    <text x="950" y="479" fill="#5fc9d9" text-anchor="middle">午後問題対策</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="320" y="560" font-size="20" fill="#5a6470">SC 試験対策 · IPA 過去問準拠 · 解説/演習/図解</text>
+</svg>

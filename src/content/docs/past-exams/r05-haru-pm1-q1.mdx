@@ -1,0 +1,103 @@
+---
+title: R5 春 午後I 問1 解説 (Java/RDBMS セキュアプログラミング)
+description: 令和5年度 春期 情報処理安全確保支援士試験 午後I 問1 — SQL インジェクション、PreparedStatement、レースコンディション
+---
+
+import Mermaid from '../../../components/Mermaid.astro';
+
+:::caution[出典]
+出典: IPA 情報処理安全確保支援士試験 令和 5 年度 春期 午後 I 問 1  
+- 問題冊子: [2023r05h_sc_pm1_qs.pdf](https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05h_sc_pm1_qs.pdf)
+- 解答例: [2023r05h_sc_pm1_ans.pdf](https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05h_sc_pm1_ans.pdf)
+- 採点講評: [2023r05h_sc_pm1_cmnt.pdf](https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05h_sc_pm1_cmnt.pdf)
+:::
+
+## 出題趣旨 (IPA 引用)
+
+> Java で実装された Web アプリケーションプログラムに対して、ツールによるソースコードの静的解析やセキュリティ観点からのシステムテストの実施はセキュリティの不備を発見するのに有効である。
+> 本問では、Web アプリケーションプログラム開発を題材として、静的解析やシステムテストで発見されたセキュリティ上の不具合への対処を踏まえたセキュアプログラミングに関する能力を問う。
+
+## 出題テーマと骨子
+
+<Mermaid code={`mindmap
+  root((R5春 PM1 問1))
+    SQLインジェクション
+      プレースホルダへの置換
+      PreparedStatement.prepareStatement
+      WHERE order_no = ?
+    スコープ不適切
+      static 変数にリクエスト固有値
+      トラット間データレース
+    レースコンディション
+      orderNo の static 保持
+      スレッドセーフとして new インスタンス
+    SAST/DAST
+      静的解析と
+      システムテスト
+`} />
+
+## 主な解答ポイント (骨子)
+
+### 設問 1: SQL インジェクション対策の実装
+
+問題コードでは `WHERE order_no = '" + userInput + "'` のように文字列連結で SQL を組み立てている箇所があり、これを **プレースホルダ + バインド** に書き換える。
+
+**解答骨子 (IPA 解答例より):**
+- WHERE 句: `WHERE head.order_no = ?`
+- Java コード: `PreparedStatement stmt = conn.prepareStatement(sql);`
+
+<Mermaid code={`flowchart LR
+  U[ユーザ入力<br/>order_no=' OR '1'='1] -->|変える| BAD["NG: 文字列連結<br/>SELECT ... WHERE order_no='…'"]
+  U -->|変える| GOOD["OK: ?プレースホルダ<br/>setString(1, order_no)"]
+  BAD --> RISK["DB 任意クエリ実行"]
+  GOOD --> SAFE["値としてエスケープされる"]
+  style BAD fill:#ffd6d6
+  style GOOD fill:#d6f5d6
+`} />
+
+### 設問 2: スコープとレースコンディション
+
+問題のコードは `orderNo` を `static` フィールドに保存しており、これによって**異なるリクエストの間で値が混ざる**可能性がある (=レースコンディション)。
+
+**解答骨子:**
+- `e: orderNo`
+- `f: static` (これが問題の原因)
+- レースコンディションの定義: 「同時実行される複数の処理が共有資源を変更し、結果が実行順序に依存して不安定になる状態」
+
+**修正方針 (IPA 解答例より):**
+```java
+String orderNo = ...;       // ローカル変数化
+... = new ... ;             // インスタンスごとに生成
+getOrderInfoBean(orderNo);  // 引数で渡す
+```
+
+<div class="sc-key">
+**Java で `static` 変数 = クラスローダ単位で 1 つ**。Servlet や Web フレームワークでは複数リクエストが同じ JVM 内で並行実行されるため、`static` への書込みは多重リクエストで衝突する。
+セッションに紐づく値は **リクエストスコープ (ローカル変数 or HttpServletRequest)** に置く。
+</div>
+
+### 設問 1 (3): WHERE 句の修正
+
+> `WHERE head.order_no = ?`
+
+`?` プレースホルダの位置と、**「カラム=?」** の形式が答えになる。
+
+### 設問 2 (5): 得意先コード
+
+問題文中で「得意先コード」が**ユーザに依存して切り替わる値**として登場し、static で持つと別ユーザの値を見せる。
+
+## 採点講評の論点 (推定)
+
+- **PreparedStatement の宣言を空欄補充できる受験者**: 約 7 割と推定 (典型問題)
+- **`static` がレースコンディションの原因と気付けるか**: 正答率が低い設問。Java でも C# でも同じ落とし穴
+- **「レースコンディション」の用語**: 競合状態と書いても可、ただし「タイミング不一致」「並行実行の問題」など曖昧表現は減点
+
+<div class="sc-trap">
+- 「**SQL インジェクション対策はエスケープ**」と書く答案は**減点**。本問の状況 (Java + PreparedStatement 利用前提) ではプレースホルダが正解
+- 「**static を const にする**」のような誤回答は実質 NG。問題は変数の**寿命とスコープ**
+</div>
+
+## 関連する解説ページ
+
+- [Web セキュリティ # SQL インジェクション](/SecuritySpecialist/topics/web/) — プレースホルダの原理
+- [午後問題対策 # 記述式の書き方](/SecuritySpecialist/afternoon/writing/) — 用語の正確性

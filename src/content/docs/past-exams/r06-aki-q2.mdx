@@ -1,0 +1,137 @@
+---
+title: R6 秋 午後 問2 解説 (DMARC / SPF / DKIM)
+description: 令和6年度 秋期 情報処理安全確保支援士試験 午後 問2 — 送信ドメイン認証、DMARC ポリシ、SPF/DKIM の連携
+---
+
+import Mermaid from '../../../components/Mermaid.astro';
+
+:::caution[出典]
+出典: IPA 情報処理安全確保支援士試験 令和 6 年度 秋期 午後 問 2  
+- 問題冊子: [2024r06a_sc_pm_qs.pdf](https://www.ipa.go.jp/shiken/mondai-kaiotu/m42obm000000afqx-att/2024r06a_sc_pm_qs.pdf)
+- 解答例: [2024r06a_sc_pm_ans.pdf](https://www.ipa.go.jp/shiken/mondai-kaiotu/m42obm000000afqx-att/2024r06a_sc_pm_ans.pdf)
+:::
+
+## 出題趣旨 (IPA 引用)
+
+> 電子メール（以下、メールという）の送信者メールアドレスを詐称したフィッシングが多くなっている。送信者メールアドレスの正当性を判定する対策として DMARC の導入が進んでいる。
+> 本問では、メールのドメイン名の変更を機としたメールサービスの導入を題材に、メールサービスの設定及び DMARC の導入を問う。
+
+## 出題テーマと骨子
+
+<Mermaid code={`flowchart LR
+  S[送信者] -->|メール送信| MTA[送信 MTA]
+  MTA -->|配送| RX[受信 MTA]
+  RX -->|SPF| DNS1[DNS<br/>SPF レコード]
+  RX -->|DKIM| DNS2[DNS<br/>DKIM 公開鍵]
+  RX -->|DMARC| DNS3[DNS<br/>DMARC ポリシ]
+  RX --> User[受信者メールボックス]
+  style DNS1 fill:#cfe5ff
+  style DNS2 fill:#dff5d8
+  style DNS3 fill:#ffe2c5
+`} />
+
+## 三つの送信ドメイン認証
+
+| 仕組み | 検査内容 | 一致対象 |
+| --- | --- | --- |
+| **SPF** (Sender Policy Framework) | 送信元 IP が**ドメインの DNS で許可されているか** | エンベロープ From (Return-Path) |
+| **DKIM** (DomainKeys Identified Mail) | メール本文/ヘッダの**電子署名** | DKIM-Signature ヘッダの d= ドメイン |
+| **DMARC** | SPF/DKIM の**結果と Header From の整合性** | Header From (見える送信者) |
+
+<div class="sc-key">
+**DMARC が解く問題**: SPF/DKIM だけでは「**Header From の偽装**」が防げない。
+攻撃者が `From: ceo@your-bank.example` と書いても、エンベロープが `attacker@evil.example` なら SPF はそちらをチェックしてしまう。
+DMARC は **「Header From のドメイン」と「SPF/DKIM の検証ドメイン」の Alignment (整合)** を要求する。
+</div>
+
+## 主な解答ポイント
+
+### 設問 1 (1): A 社ドメイン名
+
+**解答:**
+> a: A 社ドメイン名
+
+DKIM レコード公開時、署名に使ったドメインの DNS に公開鍵を登録する。
+本問では新ドメインに切り替える際、新ドメイン側に DKIM 公開鍵を準備する必要がある。
+
+### 設問 2: SMTPS
+
+**解答:**
+> c: SMTPS
+
+メール送信時の経路暗号化。**SMTPS (SMTP over TLS, TCP/465)** または **STARTTLS (TCP/587)** で暗号化する。
+
+### 設問 3 (1)(2): DMARC ポリシ
+
+**解答:**
+- 設問 3 (1): エ
+- 設問 3 (2): d: イ
+
+DMARC の `p=` (policy) は **none / quarantine / reject** の 3 段階。
+
+| ポリシ | 受信側の動作 |
+| --- | --- |
+| none | 何もしない (測定のみ。レポートのみ受信) |
+| quarantine | 検疫 (迷惑メールフォルダ等) |
+| reject | 拒否 (受け取らない) |
+
+<div class="sc-trap">
+**運用の定石**: いきなり `reject` にせず、`none` でレポートを集めて自社の正常メール送信元を全て把握 → `quarantine` → `reject` と段階移行する。
+本番ドメインで一気に `reject` を入れると、社内の業務メールが拒否される事故が起きる。
+</div>
+
+### 設問 4 (1): フィッシングメールの内容
+
+**解答:**
+> ソフトウェア修正プログラムに見せかけたマルウェアをダウンロードさせる。
+
+### 設問 4 (2): パスワード再設定経由の乗っ取り
+
+**解答 (メール内容):**
+> 社外サービスのパスワード再設定画面の URL が書かれたメール
+
+**解答 (攻撃の手口):**
+> 任意のパスワードを設定し、アカウントを乗っ取る。
+
+<Mermaid code={`sequenceDiagram
+  autonumber
+  participant A as 攻撃者
+  participant V as 被害者
+  participant S as 社外サービス
+  A->>S: パスワードリセット要求 (V のメール)
+  S->>V: 再設定 URL のメール
+  Note over A,V: メール本文を傍受 or<br/>転送ルール悪用
+  A->>S: URL アクセス + 任意 PW 設定
+  A->>S: 新 PW でログイン
+  Note over A: アカウント乗っ取り完了
+`} />
+
+### 設問 5 (1): SPF レコードの追加
+
+新メールサービス T を導入したら、その**送信元 IP を SPF レコードに追加**する必要がある。
+追加し忘れると、T サービス経由の正規メールが受信側で SPF 失敗と判定される。
+
+**解答:**
+> SPF レコードに、T サービスのメール送信元 IP アドレスを追加する。
+
+### 設問 5 (2): SPF/DKIM 不整合の検出
+
+**解答 (SPF):**
+> SPF レコードに Y サービスの情報が登録されていないのに、メールが Y サービスから送られる。
+
+**解答 (DKIM):**
+> DKIM レコードの h タグに Subject が含まれているのに、Y サービスでメールの Subject が変わる。
+
+DKIM の `h=` タグは**署名対象のヘッダ一覧**。Subject が含まれているのに途中で変えられると署名検証が失敗する。
+これは **メール転送/メーリングリスト経由で Subject にプレフィックスを足す** ような構成で起こる古典的な問題。
+
+## 採点講評の論点 (推定)
+
+- **DMARC のポリシ p=none/quarantine/reject** を理解しているか。これを知らないとほぼ全滅
+- **DKIM の h= タグ**: 細かいが、**実運用でハマる**ポイントなので試験で問われる
+- **「送信元 IP 追加」だけ書く答案**: 何のレコードに追加するかが書けていないと減点
+
+## 関連する解説ページ
+
+- [ネットワーク # DNS](/SecuritySpecialist/topics/network/) — DNS レコードの種類
+- [Web セキュリティ # OWASP Top 10](/SecuritySpecialist/topics/web/) — フィッシング全般

@@ -2,21 +2,75 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import mdx from '@astrojs/mdx';
+import sitemap from '@astrojs/sitemap';
+
+const SITE = 'https://ryujiyasu.github.io';
+const BASE = '/SecuritySpecialist';
+const FULL = `${SITE}${BASE}`;
+const TITLE = '情報処理安全確保支援士 学習サイト';
+const DESC = 'IPA 情報処理安全確保支援士試験 (SC) を最短で突破するための解説・過去問・類似テスト集。法令・暗号・ネットワーク・Web セキュリティ・マネジメントを図解で整理。';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://ryujiyasu.github.io',
-  base: '/SecuritySpecialist',
+  site: SITE,
+  base: BASE,
+  trailingSlash: 'always',
   integrations: [
     starlight({
-      title: '情報処理安全確保支援士 学習サイト',
-      description: 'IPA 情報処理安全確保支援士試験 (SC) の解説・過去問・類似問題集',
+      title: TITLE,
+      description: DESC,
       defaultLocale: 'root',
       locales: { root: { label: '日本語', lang: 'ja' } },
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/Ryujiyasu/SecuritySpecialist' },
       ],
       customCss: ['./src/styles/custom.css'],
+      lastUpdated: true,
+      pagination: true,
+      head: [
+        // Open Graph
+        { tag: 'meta', attrs: { property: 'og:type', content: 'website' } },
+        { tag: 'meta', attrs: { property: 'og:title', content: TITLE } },
+        { tag: 'meta', attrs: { property: 'og:description', content: DESC } },
+        { tag: 'meta', attrs: { property: 'og:url', content: FULL + '/' } },
+        { tag: 'meta', attrs: { property: 'og:image', content: FULL + '/og-image.svg' } },
+        { tag: 'meta', attrs: { property: 'og:locale', content: 'ja_JP' } },
+        { tag: 'meta', attrs: { property: 'og:site_name', content: TITLE } },
+        // Twitter
+        { tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } },
+        { tag: 'meta', attrs: { name: 'twitter:title', content: TITLE } },
+        { tag: 'meta', attrs: { name: 'twitter:description', content: DESC } },
+        { tag: 'meta', attrs: { name: 'twitter:image', content: FULL + '/og-image.svg' } },
+        // SEO
+        { tag: 'meta', attrs: { name: 'keywords', content: '情報処理安全確保支援士,セキスペ,SC試験,IPA,情報処理技術者試験,過去問,午後問題,合格対策,セキュリティ' } },
+        { tag: 'meta', attrs: { name: 'author', content: 'Ryuji Yasukochi' } },
+        { tag: 'meta', attrs: { name: 'robots', content: 'index,follow' } },
+        // Theme color
+        { tag: 'meta', attrs: { name: 'theme-color', content: '#0d7a8a' } },
+        // JSON-LD
+        {
+          tag: 'script',
+          attrs: { type: 'application/ld+json' },
+          content: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: TITLE,
+            description: DESC,
+            url: FULL + '/',
+            inLanguage: 'ja-JP',
+            publisher: {
+              '@type': 'Person',
+              name: 'Ryuji Yasukochi',
+              url: 'https://github.com/Ryujiyasu',
+            },
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: `${FULL}/?q={search_term_string}`,
+              'query-input': 'required name=search_term_string',
+            },
+          }),
+        },
+      ],
       sidebar: [
         {
           label: 'はじめに',
@@ -65,8 +119,13 @@ export default defineConfig({
           items: [{ autogenerate: { directory: 'practice' } }],
         },
       ],
-      components: {},
     }),
     mdx(),
+    sitemap({
+      i18n: { defaultLocale: 'ja', locales: { ja: 'ja-JP' } },
+      changefreq: 'weekly',
+      priority: 0.7,
+      lastmod: new Date(),
+    }),
   ],
 });

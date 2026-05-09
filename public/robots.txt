@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ryujiyasu.github.io/SecuritySpecialist/sitemap-index.xml

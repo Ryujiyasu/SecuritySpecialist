@@ -7,12 +7,13 @@ import Mermaid from '../../../components/Mermaid.astro';
 
 ## 利用上の注意
 
-本サイトに掲載する問題・解答例・採点講評は IPA 公式サイトに基づきます。
+本サイトに掲載する解説は IPA 公式が公開する問題冊子・解答例・採点講評に基づきます。
 
 > 法令に特別の定めがある場合を除き許諾や使用料は必要ありません。
 > — [IPA 過去問題ページ](https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html)
 
-各問題ページには**出典**を明記しています。原本 PDF は `public/past-exams/<年度>/` に配置 (リポジトリ運用者が `scripts/download-past-exams.sh` でダウンロード)。
+各解説ページには **出典 + IPA 公式 PDF への直リンク** を明記しています。
+原本 PDF は各自 IPA からダウンロード or `bash scripts/download-past-exams.sh` で取得してください。
 
 ## 学習の進め方
 
@@ -25,53 +26,43 @@ import Mermaid from '../../../components/Mermaid.astro';
   F -.別年度.-> A
 `} />
 
-## 年度別一覧
+## 解説済みの過去問
 
-### 令和 (2019〜)
+直近 5 年度から、出題の核となる問題を選定して詳しく解説しています。
 
-| 年度 | 期 | 午前 I | 午前 II | 午後 | 解説 |
-| --- | --- | --- | --- | --- | --- |
-| R7 | 春期 | (PDF) | (PDF) | (PDF) | 準備中 |
-| R6 | 秋期 | (PDF) | (PDF) | (PDF) | [午後 I 問 1 サンプル](/SecuritySpecialist/past-exams/r6-aki-pm1-q1/) |
-| R6 | 春期 | (PDF) | (PDF) | (PDF) | 準備中 |
-| R5 | 秋期 | (PDF) | (PDF) | (PDF) | 準備中 |
-| R5 | 春期 | (PDF) | (PDF) | (PDF I) (PDF II) | 準備中 |
-| R4 | 秋期 | (PDF) | (PDF) | (PDF) | 準備中 |
-| R4 | 春期 | (PDF) | (PDF) | (PDF) | 準備中 |
-| R3 | 秋期 | (PDF) | (PDF) | (PDF) | 準備中 |
-| R3 | 春期 | (PDF) | (PDF) | (PDF) | 準備中 |
-| R2 | 秋期 | (PDF) | (PDF) | (PDF) | 準備中 |
-| R1 | 秋期 | (PDF) | (PDF) | (PDF) | 準備中 |
+| 年度期 | 問 | テーマ | 解説 |
+| --- | --- | --- | --- |
+| **R7 春** | 問1 | サプライチェーンリスク / CI/CD / SBOM | [→ 解説](/SecuritySpecialist/past-exams/r07-haru-q1/) |
+| **R6 秋** | 問2 | DMARC / SPF / DKIM / メール認証 | [→ 解説](/SecuritySpecialist/past-exams/r06-aki-q2/) |
+| **R6 春** | 問1 | スマホ API セキュリティ / JWT alg=none | [→ 解説](/SecuritySpecialist/past-exams/r06-haru-q1/) |
+| **R5 秋** | 問3 | CI/CD インシデント / TOTP フィッシング / コード署名 | [→ 解説](/SecuritySpecialist/past-exams/r05-aki-q3/) |
+| **R5 春 PM1** | 問1 | Java/RDBMS セキュアプログラミング / SQLi / レースコンディション | [→ 解説](/SecuritySpecialist/past-exams/r05-haru-pm1-q1/) |
 
-### 平成 (〜H31)
+## 全年度のテーマ早見表
 
-H21〜H31 の過去問は IPA に PDF が残っています (一部除く)。
-午後 I / 午後 II の 2 部構成だった時代の問題は、現在の試験構造とのズレに注意。
+直近 5 年度の出題テーマ。自分が苦手なテーマを集中演習する目印に。
 
-| 年度 | 期 | 備考 |
+| 年度期 | 問1 | 問2 | 問3 | 問4 |
+| --- | --- | --- | --- | --- |
+| R7 春 | サプライチェーン | 脆弱性管理 (CVSS/EPSS) | スマホアプリ脆弱性 | IT 資産管理 (ASM) |
+| R6 秋 | エンドポイント侵害ログ解析 | DMARC/SPF/DKIM | Web スキミング (XSS) | Web 診断/WebAPI |
+| R6 春 | スマホ API/JWT | VPN/DDoS | Web 脆弱性 (CSRF/XSS) | Java/RDBMS |
+| R5 秋 | HTML/JS 脆弱性 | 無線 LAN/RADIUS | CI/CD インシデント | リスクアセスメント |
+| R5 春 PM1 | Java/SQLi | ライブラリ脆弱性 | クラウド構成 | (PM2 別途) |
+
+## IPA 公式 PDF の取得
+
+| 年度期 | 午前 II | 午後 |
 | --- | --- | --- |
-| H31 | 春期 | 午後 II は事例問題 |
-| H30 | 秋期/春期 | |
-| H29 | 秋期/春期 | |
-| H28〜H21 | 秋期/春期 | 試験名が「情報セキュリティスペシャリスト」だった時代 |
+| R7 春 | [問題](https://www.ipa.go.jp/shiken/mondai-kaiotu/nl10bi0000009lh8-att/2025r07h_sc_am2_qs.pdf) / [解答](https://www.ipa.go.jp/shiken/mondai-kaiotu/nl10bi0000009lh8-att/2025r07h_sc_am2_ans.pdf) | [問題](https://www.ipa.go.jp/shiken/mondai-kaiotu/nl10bi0000009lh8-att/2025r07h_sc_pm_qs.pdf) / [解答](https://www.ipa.go.jp/shiken/mondai-kaiotu/nl10bi0000009lh8-att/2025r07h_sc_pm_ans.pdf) / [講評](https://www.ipa.go.jp/shiken/mondai-kaiotu/nl10bi0000009lh8-att/2025r07h_sc_pm_cmnt.pdf) |
+| R6 秋 | [問題](https://www.ipa.go.jp/shiken/mondai-kaiotu/m42obm000000afqx-att/2024r06a_sc_am2_qs.pdf) / [解答](https://www.ipa.go.jp/shiken/mondai-kaiotu/m42obm000000afqx-att/2024r06a_sc_am2_ans.pdf) | [問題](https://www.ipa.go.jp/shiken/mondai-kaiotu/m42obm000000afqx-att/2024r06a_sc_pm_qs.pdf) / [解答](https://www.ipa.go.jp/shiken/mondai-kaiotu/m42obm000000afqx-att/2024r06a_sc_pm_ans.pdf) |
+| R6 春 | [問題](https://www.ipa.go.jp/shiken/mondai-kaiotu/m42obm000000afqx-att/2024r06h_sc_am2_qs.pdf) / [解答](https://www.ipa.go.jp/shiken/mondai-kaiotu/m42obm000000afqx-att/2024r06h_sc_am2_ans.pdf) | [問題](https://www.ipa.go.jp/shiken/mondai-kaiotu/m42obm000000afqx-att/2024r06h_sc_pm_qs.pdf) / [解答](https://www.ipa.go.jp/shiken/mondai-kaiotu/m42obm000000afqx-att/2024r06h_sc_pm_ans.pdf) |
+| R5 秋 | [問題](https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05a_sc_am2_qs.pdf) / [解答](https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05a_sc_am2_ans.pdf) | [問題](https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05a_sc_pm_qs.pdf) / [解答](https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05a_sc_pm_ans.pdf) / [講評](https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05a_sc_pm_cmnt.pdf) |
+| R5 春 | [問題](https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05h_sc_am2_qs.pdf) / [解答](https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05h_sc_am2_ans.pdf) | [PM1 問題](https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05h_sc_pm1_qs.pdf) / [PM2 問題](https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05h_sc_pm2_qs.pdf) |
+
+R4 以前の過去問は [IPA 過去問題ページ](https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html) から取得可能。
 
 <div class="sc-key">
 **最重要**: 直近 5 年 (R3〜R7) を最低 3 周。古い問題は出題傾向把握として 1 周。
 法令系の古い問題は**現行法と齟齬がある**点に注意 (個情法は数回改正されている)。
 </div>
-
-## 出題分野マップ (R3〜R7 午後問題)
-
-実際の出題テーマを知ることで、自分の得意/不得意を予測できる。
-
-| 年度期 | 大問 1 | 大問 2 | 大問 3 | 大問 4 |
-| --- | --- | --- | --- | --- |
-| R7 春 | (要 PDF 確認) | | | |
-| R6 秋 | Web 認証/認可 | クラウドメール侵害 | サプライチェーン攻撃 | 暗号化通信路 |
-| R6 春 | Web セキュリティ | DNS / メール | インシデント対応 | ID 連携 |
-| R5 秋 | 認証連携 | NW セグメント | CSIRT 体制 | TLS 構成 |
-| R5 春 | Web アプリ | プロキシ・FW | リスクアセス | 暗号化方式 |
-
-(詳細は各年度ページの解説を参照)
-
-→ 学習サンプル: [R6 秋 午後 I 問 1 (Web 認証/認可) 解説](/SecuritySpecialist/past-exams/r6-aki-pm1-q1/)

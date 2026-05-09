@@ -8,27 +8,36 @@
 #   bash scripts/download-past-exams.sh
 #
 # 出力先: public/past-exams/<year>/<file>.pdf
+#
+# 注意: IPA の URL は年度ごとに opaque な path が含まれており、突然の変更があり得る。
+# 動かなくなったら https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html から
+# 各年度ページの URL を確認し、本スクリプト内の BASE_* を更新する。
 
 set -euo pipefail
 
 OUT_DIR="public/past-exams"
 mkdir -p "$OUT_DIR"
 
-# 年度ディレクトリと、IPA 上のパスのマッピング
-# IPA の URL は年度ごとに微妙に異なるため、実際の構造に応じて編集すること
-# 確認方法: https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html を開き、
-# 各年度のリンクから個別 PDF の URL を控える
+# 年度別 base path (IPA サイトの opaque token)
+BASE_R05="https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att"
+BASE_R06="https://www.ipa.go.jp/shiken/mondai-kaiotu/m42obm000000afqx-att"
+BASE_R07="https://www.ipa.go.jp/shiken/mondai-kaiotu/nl10bi0000009lh8-att"
 
 declare -A EXAMS=(
-  # 形式: ["保存先ディレクトリ"]="URL1 URL2 URL3 URL4"
-  # 各 URL は「午前I / 午前II / 午後I / 午後II 問題冊子 + 解答例 + 採点講評」
-  ["r07-haru"]="https://www.ipa.go.jp/shiken/mondai-kaiotu/2025r07h/2025r07h_sc_am1_qs.pdf https://www.ipa.go.jp/shiken/mondai-kaiotu/2025r07h/2025r07h_sc_am2_qs.pdf https://www.ipa.go.jp/shiken/mondai-kaiotu/2025r07h/2025r07h_sc_pm1_qs.pdf https://www.ipa.go.jp/shiken/mondai-kaiotu/2025r07h/2025r07h_sc_pm2_qs.pdf"
-  ["r06-aki"]="https://www.ipa.go.jp/shiken/mondai-kaiotu/2024r06a/2024r06a_sc_am1_qs.pdf https://www.ipa.go.jp/shiken/mondai-kaiotu/2024r06a/2024r06a_sc_am2_qs.pdf https://www.ipa.go.jp/shiken/mondai-kaiotu/2024r06a/2024r06a_sc_pm_qs.pdf"
-  ["r06-haru"]="https://www.ipa.go.jp/shiken/mondai-kaiotu/2024r06h/2024r06h_sc_am1_qs.pdf https://www.ipa.go.jp/shiken/mondai-kaiotu/2024r06h/2024r06h_sc_am2_qs.pdf https://www.ipa.go.jp/shiken/mondai-kaiotu/2024r06h/2024r06h_sc_pm_qs.pdf"
-  ["r05-aki"]="https://www.ipa.go.jp/shiken/mondai-kaiotu/2023r05a/2023r05a_sc_am1_qs.pdf https://www.ipa.go.jp/shiken/mondai-kaiotu/2023r05a/2023r05a_sc_am2_qs.pdf https://www.ipa.go.jp/shiken/mondai-kaiotu/2023r05a/2023r05a_sc_pm_qs.pdf"
-  ["r05-haru"]="https://www.ipa.go.jp/shiken/mondai-kaiotu/2023r05h/2023r05h_sc_am1_qs.pdf https://www.ipa.go.jp/shiken/mondai-kaiotu/2023r05h/2023r05h_sc_am2_qs.pdf https://www.ipa.go.jp/shiken/mondai-kaiotu/2023r05h/2023r05h_sc_pm1_qs.pdf https://www.ipa.go.jp/shiken/mondai-kaiotu/2023r05h/2023r05h_sc_pm2_qs.pdf"
-  # H21〜R4 については後述の「URL 確認手順」に従って手動で追加してください
-  # 参考: 古い年度は https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html の「年度別過去問題」リンク
+  # R5 春期 (午後 I + 午後 II の旧形式)
+  ["r05-haru"]="$BASE_R05/2023r05h_sc_am2_qs.pdf $BASE_R05/2023r05h_sc_am2_ans.pdf $BASE_R05/2023r05h_sc_pm1_qs.pdf $BASE_R05/2023r05h_sc_pm1_ans.pdf $BASE_R05/2023r05h_sc_pm1_cmnt.pdf $BASE_R05/2023r05h_sc_pm2_qs.pdf $BASE_R05/2023r05h_sc_pm2_ans.pdf $BASE_R05/2023r05h_sc_pm2_cmnt.pdf"
+
+  # R5 秋期 (午後 4 問選択 2 問の現行形式に移行)
+  ["r05-aki"]="$BASE_R05/2023r05a_sc_am2_qs.pdf $BASE_R05/2023r05a_sc_am2_ans.pdf $BASE_R05/2023r05a_sc_pm_qs.pdf $BASE_R05/2023r05a_sc_pm_ans.pdf $BASE_R05/2023r05a_sc_pm_cmnt.pdf"
+
+  # R6 春期
+  ["r06-haru"]="$BASE_R06/2024r06h_sc_am2_qs.pdf $BASE_R06/2024r06h_sc_am2_ans.pdf $BASE_R06/2024r06h_sc_pm_qs.pdf $BASE_R06/2024r06h_sc_pm_ans.pdf"
+
+  # R6 秋期
+  ["r06-aki"]="$BASE_R06/2024r06a_sc_am2_qs.pdf $BASE_R06/2024r06a_sc_am2_ans.pdf $BASE_R06/2024r06a_sc_pm_qs.pdf $BASE_R06/2024r06a_sc_pm_ans.pdf"
+
+  # R7 春期 (最新)
+  ["r07-haru"]="$BASE_R07/2025r07h_sc_am2_qs.pdf $BASE_R07/2025r07h_sc_am2_ans.pdf $BASE_R07/2025r07h_sc_pm_qs.pdf $BASE_R07/2025r07h_sc_pm_ans.pdf $BASE_R07/2025r07h_sc_pm_cmnt.pdf"
 )
 
 for year in "${!EXAMS[@]}"; do
@@ -38,12 +47,13 @@ for year in "${!EXAMS[@]}"; do
     fname=$(basename "$url")
     dest="$dir/$fname"
     if [ -f "$dest" ]; then
-      echo "[skip] $dest (already exists)"
+      echo "[skip] $dest"
       continue
     fi
     echo "[fetch] $url"
     if curl -sSfL --max-time 60 -o "$dest" "$url"; then
-      echo "  -> saved: $dest"
+      size=$(stat -c '%s' "$dest" 2>/dev/null || stat -f '%z' "$dest")
+      echo "  -> saved: $dest ($size bytes)"
     else
       echo "  -> FAILED: $url" >&2
     fi

@@ -1,0 +1,122 @@
+---
+title: R6 春 午後 問1 解説 (スマホ API セキュリティ、JWT alg none)
+description: 令和6年度 春期 情報処理安全確保支援士試験 午後 問1 — JWT 検証不備、ステートレス API、ヘッダ偽装
+---
+
+import Mermaid from '../../../components/Mermaid.astro';
+
+:::caution[出典]
+出典: IPA 情報処理安全確保支援士試験 令和 6 年度 春期 午後 問 1  
+- 問題冊子: [2024r06h_sc_pm_qs.pdf](https://www.ipa.go.jp/shiken/mondai-kaiotu/m42obm000000afqx-att/2024r06h_sc_pm_qs.pdf)
+- 解答例: [2024r06h_sc_pm_ans.pdf](https://www.ipa.go.jp/shiken/mondai-kaiotu/m42obm000000afqx-att/2024r06h_sc_pm_ans.pdf)
+:::
+
+## 出題趣旨 (IPA 引用)
+
+> 多くのシステムにおいて、スマートフォンのアプリケーションプログラムを利用した API 連携が行われる中、API の脆弱性を作り込むケースが増えている。
+> 本問では、API セキュリティを題材として、指摘された脆弱性に対して対策を立案する能力を問う。
+
+## 出題テーマ
+
+<Mermaid code={`mindmap
+  root((R6春 PM 問1))
+    JWT 検証
+      alg=none 攻撃
+      利用者 ID と mid 不一致
+      ヘッダの整合性検証
+    ステートレス
+      サーバセッション無し
+      Token に状態を集約
+    認証回数制限
+      連続失敗回数
+      アカウントロック
+    User-Agent
+      偽装で検知回避
+      WAF シグネチャの限界
+`} />
+
+## 主な解答ポイント
+
+### 設問 1: ステートレス
+
+**解答 (IPA 解答例):**
+> a: ステートレス
+
+REST API の代表的設計原則。サーバ側にセッション状態を持たず、各リクエストに必要な情報を全て含める。
+**スケール容易性 / フェイルオーバー容易性 / キャッシュ容易性** の利点があるが、認証/認可は **JWT 等のトークンで全て表現**する必要がある。
+
+### 設問 2 (1): HTTP 500 系の意味
+
+**解答:**
+> b: 500
+
+サーバ側エラー (Internal Server Error)。利用者の入力が原因でも、未処理の例外で 500 が返ると **詳細な内部情報** がレスポンスやログに漏れるリスクがある。
+
+### 設問 2 (2): JWT の alg none 検証
+
+これが本問の核心。
+
+**解答骨子:**
+- データ: **JWT ヘッダ内の alg に指定された値**
+- 内容: **NONE でないことを検証する**
+
+<Mermaid code={`sequenceDiagram
+  autonumber
+  participant A as 攻撃者
+  participant API as API サーバ
+  Note over A: JWT を偽造<br/>header={"alg":"none"}<br/>signature=""
+  A->>API: Authorization: Bearer eyJh... (alg=none)
+  alt サーバが alg を信頼
+    API->>API: alg=none → 署名検証スキップ
+    API-->>A: 200 OK (任意の利用者として認証)
+  else サーバが alg=none を拒否
+    API-->>A: 401 (検証失敗)
+  end
+`} />
+
+<div class="sc-key">
+**JWT alg=none 攻撃**: JWT の仕様上、`alg: "none"` は「署名なし」を意味する。実装が**ヘッダの alg をそのまま信じて検証**してしまうと、署名を空文字にした偽造トークンが通ってしまう。
+対策: サーバ側でアルゴリズムを**ホワイトリスト固定** (例: `HS256` のみ許可)。`alg` フィールドを信用しない。
+</div>
+
+### 設問 2 (3): JWT の利用者 ID と mid の照合
+
+**解答:**
+> JWT に含まれる利用者 ID が mid の値と一致するかどうかを検証する処理
+
+JWT の `sub` (subject) が、リクエストパス上の `mid` (member id) と一致するかをサーバ側で照合。
+不一致なら他人のリソースへの **横移動 (privilege escalation / IDOR)** の試みとみなして拒否。
+
+### 設問 2 (5): アカウントロック
+
+**解答:**
+> d: 連続失敗回数がしきい値を超えたらアカウントをロックする処理
+
+オンラインブルートフォース対策の定番。**しきい値 / ロック時間 / 解除条件 (本人確認)** が運用の論点。
+
+### 設問 3: User-Agent 偽装と WAF 検知
+
+**解答骨子 (要約):**
+> 不審な User-Agent をブロックしても、攻撃者は正規ブラウザの User-Agent に偽装してくる。
+> アラートを受信したら**攻撃かどうかを精査**する (誤検知を防ぐ)。
+
+**正規表現の例 (IPA 解答):**
+- `\W[jJ][nN][dD][iI]\W` (Log4Shell の `${jndi}` 検知)
+- `\W(j|J)(n|N)(d|D)(i|I)\W` (同上を別表記)
+
+<div class="sc-trap">
+**User-Agent ベースの WAF ルール = 弱い**。攻撃者は User-Agent を 1 行変更するだけで回避できる。
+真の対策は **入力値 + ペイロードのセマンティック検査** (Java の Log4j ライブラリ脆弱性なら、出力先テンプレートの末端で `${jndi:...}` パターンを検出する)。
+</div>
+
+## 採点講評の論点 (推定)
+
+- **alg=none を知らない受験者多数**。JWT を実装したことがある人なら常識だが、机上学習のみだと盲点になる
+- **ステートレス**の用語: 「セッションレス」「無状態」など類似表現は許容と推定。ただし本問では「ステートレス」が正答
+- **誤検知を防ぐためにアラート精査**: 「ブロックする」だけ書くと×。**「精査する/真偽を判定する」** という運用フローの理解が必要
+
+## 関連する解説ページ
+
+- [暗号と認証 # OIDC 認可コードフロー](/SecuritySpecialist/topics/crypto-auth/) — JWT の構造
+- [Web セキュリティ # OWASP Top 10](/SecuritySpecialist/topics/web/) — Broken Access Control
+- [ネットワーク # WAF](/SecuritySpecialist/topics/network/) — WAF の限界
