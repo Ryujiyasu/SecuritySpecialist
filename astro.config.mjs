@@ -28,6 +28,21 @@ export default defineConfig({
       lastUpdated: true,
       pagination: true,
       head: [
+        // Google Analytics (GA4)
+        {
+          tag: 'script',
+          attrs: {
+            async: true,
+            src: 'https://www.googletagmanager.com/gtag/js?id=G-6Z2DQKLVDM',
+          },
+        },
+        {
+          tag: 'script',
+          content: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-6Z2DQKLVDM');`,
+        },
         // Open Graph
         { tag: 'meta', attrs: { property: 'og:type', content: 'website' } },
         { tag: 'meta', attrs: { property: 'og:title', content: TITLE } },
