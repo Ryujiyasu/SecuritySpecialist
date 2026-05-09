@@ -1,0 +1,70 @@
+/* SC 学習サイト カスタムスタイル */
+
+:root {
+  --sl-font: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI',
+             'Meiryo', system-ui, -apple-system, sans-serif;
+  --sl-font-mono: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+}
+
+/* 重要ポイント枠 */
+.sc-key {
+  border-left: 4px solid var(--sl-color-accent);
+  padding: 0.75rem 1rem;
+  background: var(--sl-color-bg-nav);
+  margin: 1rem 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.sc-key::before {
+  content: '🔑 重要ポイント';
+  font-weight: bold;
+  color: var(--sl-color-accent-high);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* よくある誤答 */
+.sc-trap {
+  border-left: 4px solid #d96c6c;
+  padding: 0.75rem 1rem;
+  background: rgba(217, 108, 108, 0.06);
+  margin: 1rem 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.sc-trap::before {
+  content: '⚠️ 受験生がハマる罠';
+  font-weight: bold;
+  color: #c14545;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* 表のセンタリングと境界 */
+.sl-markdown-content table {
+  display: table;
+  width: 100%;
+}
+
+.sl-markdown-content th {
+  background: var(--sl-color-bg-nav);
+}
+
+/* 解答例ボックス */
+details.sc-answer {
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  margin: 1rem 0;
+  background: var(--sl-color-bg-nav);
+}
+
+details.sc-answer > summary {
+  cursor: pointer;
+  font-weight: bold;
+  padding: 0.25rem 0;
+}
+
+details.sc-answer[open] {
+  border-color: var(--sl-color-accent);
+}

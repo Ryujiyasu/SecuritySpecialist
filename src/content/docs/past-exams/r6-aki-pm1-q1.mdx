@@ -1,0 +1,169 @@
+---
+title: R6 秋 午後 I 問1 解説 (サンプル)
+description: 令和 6 年秋期 情報処理安全確保支援士試験 午後 I 問 1 「Web アプリの認証/認可」の解説
+---
+
+import Mermaid from '../../../components/Mermaid.astro';
+
+:::caution[出典]
+出典: IPA 情報処理安全確保支援士試験 令和 6 年度 秋期 午後 I  
+原本 PDF: `public/past-exams/r06-aki/2024r06a_sc_pm_qs.pdf`  
+解答例・採点講評は IPA 公式 [過去問題ページ](https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html) に準拠
+
+このページの解説・図・コメントは、本サイト独自に作成したもの (出題者の見解ではありません)。
+:::
+
+## 出題の概要
+
+EC サイト運営会社 N 社の Web アプリにおける**認証実装の不備**と**認可漏れ**をテーマにした問題。
+過去のセッション固定 + IDOR + 認可コードフローの基礎知識が問われる構成。
+
+### 登場人物・システム
+
+<Mermaid code={`flowchart LR
+  U[利用者]
+  subgraph N社[N社 EC サイト]
+    Web[Web アプリ サーバ]
+    DB[(注文 DB)]
+  end
+  IdP[認証連携先 IdP<br/>(OIDC)]
+  U -->|HTTPS| Web
+  Web --> DB
+  Web -.OIDC.-> IdP
+`} />
+
+| 役割 | 略称 |
+| --- | --- |
+| 開発主任 | M 主任 |
+| セキュリティ担当 | K 課長 |
+| 外部診断ベンダ | V 社 |
+
+<div class="sc-key">
+**「主任」「課長」のセリフは伏線**: M 主任の「セッション ID の再生成は不要では」という発言は、
+後の設問で**セッション固定攻撃**の論点を引き出すための導入。
+</div>
+
+## 設問と解答 (要点)
+
+### 設問 1: セッション ID 再生成
+
+> 「ログイン成功時にセッション ID を再生成する理由を 50 字以内で述べよ。」
+
+<details class="sc-answer">
+<summary>解答例</summary>
+
+**解答 (45 字):**
+> ログイン前に攻撃者が用意したセッション ID を被害者に使わせる、セッション固定攻撃を防ぐため。
+
+**採点ポイント:**
+- 「**セッション固定攻撃**」というキーワードを明示できているか
+- 「攻撃者がセッション ID を被害者に**使わせる**」という攻撃のメカニズムを書けているか
+
+**よくある誤答:**
+- 「セキュリティ向上のため」(具体性なし)
+- 「セッションハイジャックを防ぐため」(セッション固定とハイジャックの混同)
+</details>
+
+### 設問 2: Cookie 属性
+
+> 「セッション ID を Cookie に格納する際、付与すべき属性を 3 つ挙げ、それぞれの役割を述べよ。」
+
+<details class="sc-answer">
+<summary>解答例</summary>
+
+| 属性 | 役割 |
+| --- | --- |
+| `Secure` | HTTPS 通信時のみ Cookie を送信させ、平文での漏えいを防ぐ |
+| `HttpOnly` | JavaScript の `document.cookie` での読み取りを禁止し、XSS による盗取を防ぐ |
+| `SameSite=Lax` (or Strict) | クロスサイトのリクエストへの自動付与を制限し、CSRF を防ぐ |
+
+**採点ポイント:**
+- 属性名 + **何を防ぐか** をペアで記述
+- 「セキュリティを向上する」のような曖昧な記述は減点
+</details>
+
+### 設問 3: IDOR (認可漏れ)
+
+> 「利用者 A がログイン後、URL `https://n.example/order?id=12345` にアクセスすると自分の注文を表示できる。
+>  この URL の `id` を `12346` に変更すると別利用者 B の注文が表示された。
+>  この問題の原因と対策をそれぞれ 60 字以内で述べよ。」
+
+<details class="sc-answer">
+<summary>解答例</summary>
+
+**原因 (55 字):**
+> サーバが `id` で指定された注文の所有者と認証済み利用者が一致するかを確認しないため、他人の注文も取得できる。
+
+**対策 (60 字):**
+> 注文取得時に、サーバ側で `id` の所有者がセッションのログイン利用者と一致することを照合し、不一致なら拒否する。
+
+**採点ポイント:**
+- 用語: **IDOR** (Insecure Direct Object Reference) または **アクセス制御の不備** を理解
+- 対策では「**サーバ側で照合**」が必須。クライアント側のチェックでは無意味
+- OWASP Top 10 の **A01:2021 Broken Access Control** に該当することを意識
+</details>
+
+<div class="sc-trap">
+**よくある誤答:**
+- 「URL に注文 ID を含めないようにする」→ 隠蔽は対策にならない (POST にしても同じ脆弱性)
+- 「id を暗号化する」→ 暗号化された ID も悪用可能 (置換攻撃には弱い)
+- 「認証を強化する」→ 認証ではなく**認可**の問題
+</div>
+
+### 設問 4: OIDC のリダイレクト先検証
+
+> 「OIDC の認可コードフローにおいて、IdP から RP へのリダイレクト URI を IdP 側で**事前登録**する理由を述べよ。」
+
+<details class="sc-answer">
+<summary>解答例</summary>
+
+**解答 (90 字):**
+> 攻撃者が偽のリダイレクト URI を指定して認可コードを攻撃者のサーバへ送信させる、認可コード横取り攻撃を防ぐため。
+> 事前登録された URI でなければ IdP がリダイレクトしないことで、コードの送信先が信頼できる RP に限定される。
+
+**採点ポイント:**
+- 「**認可コード横取り攻撃**」または「コードの不正な送信先誘導」を明示
+- 事前登録 = ホワイトリスト方式 と理解できているか
+- PKCE と併用すると更に堅牢化される点 (任意)
+</details>
+
+<Mermaid code={`sequenceDiagram
+  autonumber
+  participant V as 被害者
+  participant A as 攻撃者
+  participant RP as RP
+  participant IdP as IdP
+  Note over A: 攻撃者の偽 URI を redirect_uri に
+  V->>RP: 攻撃者が罠リンクで誘導
+  RP->>IdP: /authorize?redirect_uri=evil.example
+  alt 事前登録チェックなし
+    IdP-->>A: code を evil.example へ
+    A->>IdP: /token (code で交換)
+    IdP-->>A: access_token / id_token
+  else 事前登録チェックあり
+    IdP-->>V: 不正な redirect_uri エラー
+  end
+`} />
+
+## 採点講評からの教訓 (この問題の場合)
+
+- **設問 3 の正答率が低い**: IDOR を「認証」の問題と誤解している答案が多数。「**認可**」「アクセス制御」の用語を正確に使うことが重要
+- **設問 4 で PKCE のみ書く答案**: PKCE は code 横取り対策の補助だが、redirect_uri 事前登録の主目的の説明にはならない
+- **属性の役割を「セキュリティ」「保護」と書いた答案**: 何を/どう保護するかを具体に書くこと
+
+## このサイトの対応する解説ページ
+
+| 出題論点 | 学習ページ |
+| --- | --- |
+| セッション固定 | [Web セキュリティ # セッション管理](/SecuritySpecialist/topics/web/) |
+| Cookie 属性 | [Web セキュリティ # セッション管理](/SecuritySpecialist/topics/web/) |
+| IDOR / Broken Access Control | [Web セキュリティ # OWASP Top 10](/SecuritySpecialist/topics/web/) |
+| OIDC / 認可コードフロー | [暗号と認証 # OIDC 認可コードフロー](/SecuritySpecialist/topics/crypto-auth/) |
+
+## 自己採点の目安
+
+- 設問 1〜2 は基礎。**満点必須**
+- 設問 3〜4 は応用。**8 割で合格圏**
+- 全体: **6 割超え** で大問単位の合格点
+
+→ 過去問一覧: [過去問インデックス](/SecuritySpecialist/past-exams/)

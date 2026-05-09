@@ -1,0 +1,44 @@
+---
+// クライアントサイドで Mermaid 図を描画するコンポーネント
+// 使い方: <Mermaid code={`graph TD; A-->B`} />
+// MDX 内では import で取り込んで利用
+const { code } = Astro.props;
+---
+
+<pre class="mermaid">{code}</pre>
+
+<script>
+  import mermaid from 'mermaid';
+
+  const initMermaid = () => {
+    const dark = document.documentElement.dataset.theme === 'dark';
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: dark ? 'dark' : 'default',
+      securityLevel: 'strict',
+      flowchart: { htmlLabels: true, useMaxWidth: true },
+      sequence: { useMaxWidth: true },
+    });
+    mermaid.run({ querySelector: 'pre.mermaid' });
+  };
+
+  // 初回 + テーマ切替 + ページ遷移時
+  initMermaid();
+  document.addEventListener('astro:after-swap', initMermaid);
+  const observer = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      if (m.attributeName === 'data-theme') initMermaid();
+    }
+  });
+  observer.observe(document.documentElement, { attributes: true });
+</script>
+
+<style>
+  pre.mermaid {
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+    text-align: center;
+    overflow-x: auto;
+  }
+</style>

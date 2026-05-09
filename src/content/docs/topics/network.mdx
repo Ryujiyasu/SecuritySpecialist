@@ -1,0 +1,194 @@
+---
+title: ネットワーク
+description: FW / IDS / IPS / WAF / プロキシ / セグメンテーション / VPN / DNS の論点を整理
+---
+
+import Mermaid from '../../../components/Mermaid.astro';
+
+## 防御装置の配置 (典型的な多層防御)
+
+<Mermaid code={`flowchart LR
+  I[Internet] --> R[エッジ ルータ]
+  R --> F1[FW<br/>外側]
+  F1 --> D[DMZ<br/>Web/SMTP/DNS]
+  F1 --> F2[FW<br/>内側]
+  F1 --- I1[IPS]
+  D --- W[WAF]
+  F2 --> L[内部 LAN]
+  F2 --- P[Proxy<br/>(送信元偽装防止)]
+  L --> S[業務サーバ]
+  L --> U[クライアント]
+  style D fill:#fff2cc,stroke:#d6b656
+  style L fill:#d4e1f5,stroke:#6c8ebf
+`} />
+
+### 各装置の見分け方
+
+| 装置 | 主な防御層 | 検査内容 | 試験での頻出論点 |
+| --- | --- | --- | --- |
+| FW (パケットフィルタ) | L3/L4 | 送信元/宛先 IP・ポート | 静的フィルタ vs **ステートフル** |
+| IDS | L3〜L7 | パケット/ペイロード | 通信は通す。**検知のみ** |
+| IPS | L3〜L7 | パケット/ペイロード | 通信を **遮断** |
+| WAF | L7 (HTTP) | HTTP リクエスト/レスポンス | XSS, SQLi, Path Traversal |
+| プロキシ | L7 | HTTP/HTTPS | URL フィルタ、出口対策、SSL インスペクション |
+
+<div class="sc-key">
+午後の鉄板パターン: 「**WAF があるのに XX 攻撃が成立した**」→ 多くは
+(1) WAF が暗号化済みトラフィックを復号できていない、(2) 内部発の通信に WAF が無い、
+(3) WAF のシグネチャが対応していない新種、のいずれか。
+</div>
+
+## ネットワークセグメンテーション (ゾーン設計)
+
+<Mermaid code={`flowchart TB
+  subgraph EXT[外部]
+    I[インターネット]
+  end
+  subgraph DMZ[DMZ]
+    W[Web/SMTP/DNS]
+  end
+  subgraph TRUST[内部 信頼ゾーン]
+    A[業務 AP]
+    DB[(機密 DB)]
+  end
+  subgraph MGMT[管理ゾーン]
+    M[踏み台/ジャンプサーバ]
+    SIEM[SIEM/ログ集約]
+  end
+  I -->|443/80| W
+  W -->|限定ポート| A
+  A -->|限定ポート| DB
+  M -.SSH/RDP.-> A
+  M -.SSH/RDP.-> DB
+  A --> SIEM
+  DB --> SIEM
+  W --> SIEM
+  style DB fill:#ffd6d6
+  style M fill:#e0d8ff
+`} />
+
+<div class="sc-key">
+**最小権限と境界防御**: ゾーン間の通信は「必要なポート / 方向 / 認証」だけを許可する。
+午後では「DMZ 内のサーバが内部 DB に直接接続できる構成」を不適切な根拠として答えさせる問題が頻出。
+</div>
+
+## FW のフィルタリング設計問題
+
+午後でよく出るパターン:
+
+> 「Web サーバから DB サーバへの接続を許可するルールを書け」
+
+正答の例:
+
+| 順 | アクション | 送信元 | 宛先 | プロトコル/ポート |
+| --- | --- | --- | --- | --- |
+| 10 | permit | Web セグメント (10.0.1.0/24) | DB セグメント (10.0.2.0/24) | TCP/3306 (MySQL) |
+| 9999 | deny | any | any | any |
+
+<div class="sc-trap">
+- ルールは **記述順に評価され、最初にマッチしたものが採用** される
+- 暗黙の deny を最後に必ず置く
+- **戻りパケット** はステートフル FW なら自動許可、静的 FW なら明示許可必要
+- 送信元/宛先を **両方 any にしない**。レビュー時のチェックポイント
+</div>
+
+## DNS と DNS セキュリティ
+
+### DNS キャッシュポイズニング
+
+<Mermaid code={`sequenceDiagram
+  autonumber
+  participant C as クライアント
+  participant R as キャッシュ DNS
+  participant A as 攻撃者
+  participant S as 正規 DNS
+  C->>R: example.com の A レコード問合せ
+  R->>S: 反復問合せ
+  par 攻撃者が偽応答を先に返す
+    A->>R: 偽応答<br/>(example.com → 攻撃者 IP)
+  and 正規応答
+    S->>R: 正規応答
+  end
+  Note over R: 先に届いた応答を採用
+  R-->>C: 偽の A レコード
+  C->>A: 偽サイトへアクセス
+`} />
+
+**対策:**
+- **DNSSEC** で応答の真正性を検証 (公開鍵署名による完全性)
+- ソースポートランダム化 (Kaminsky 攻撃対策)
+- DNS over HTTPS (DoH) / DNS over TLS (DoT)
+
+### DNS 増幅攻撃
+
+DNS の小さな問合せ (約 60 バイト) で **大きな応答** (約 4,000 バイト) を引き出し、
+**送信元 IP を偽装** して被害者に応答を集める DDoS 手法。
+
+対策: オープンリゾルバを公開しない、BCP38 (送信元 IP フィルタリング)。
+
+## VPN
+
+<Mermaid code={`flowchart LR
+  subgraph A[拠点 A]
+    a1[端末] --> a2[VPN GW]
+  end
+  subgraph B[拠点 B]
+    b2[VPN GW] --> b1[サーバ]
+  end
+  a2 ===|IPsec/SSL VPN<br/>暗号化トンネル| b2
+  Internet[(Internet)]
+  a2 --- Internet
+  b2 --- Internet
+`} />
+
+| 種別 | レイヤ | 主用途 | 試験論点 |
+| --- | --- | --- | --- |
+| IPsec VPN | L3 | 拠点間 | IKE フェーズ 1 (認証) / フェーズ 2 (SA 確立) |
+| SSL VPN | L4 以上 | リモートアクセス | クライアントレス、ブラウザ可 |
+| WireGuard | L3 | モダン拠点間 | ChaCha20+Poly1305、軽量 |
+
+<div class="sc-trap">
+SSL VPN は **TLS で通信を暗号化するだけ** で、特定の脆弱性 (Pulse Secure, Fortinet 等) で
+過去に大規模流出事故あり。VPN 装置自体の脆弱性管理が重要。
+</div>
+
+## ゼロトラスト
+
+「境界防御だけでは守れない」という前提で、**全アクセスを認証・認可・暗号化**。
+
+<Mermaid code={`flowchart LR
+  U[ユーザ/端末] -->|常に認証/認可| PEP[Policy Enforcement Point]
+  PEP --> R[リソース]
+  PEP <--> PDP[Policy Decision Point<br/>IDaaS / 端末状態 / リスクスコア]
+  PDP --- C1[コンテキスト<br/>場所/時刻]
+  PDP --- C2[端末コンプライアンス<br/>MDM/EDR]
+  PDP --- C3[ID プロバイダ<br/>OIDC/SAML]
+`} />
+
+<div class="sc-key">
+ゼロトラストの基本原則: **「決して信頼せず、常に検証する」(Never trust, always verify)**。
+NIST SP800-207 が試験での参照規格。
+</div>
+
+## 確認問題
+
+<details class="sc-answer">
+<summary>Q1. IDS と IPS の違いを 1 行で。</summary>
+
+**A.** IDS は検知のみ、IPS は検知して **遮断する**。IPS は通信経路上 (インライン) に置く必要がある。
+</details>
+
+<details class="sc-answer">
+<summary>Q2. DMZ に Web サーバを置く理由を、内部 LAN に置く場合と比較して述べよ。</summary>
+
+**A.** インターネットからの直接アクセスを受ける Web サーバが侵害されても、
+**内部 LAN への影響を限定する** ため。DMZ ↔ 内部 LAN 間は FW で限定的な通信のみ許可することで、侵害範囲を抑える (多層防御)。
+</details>
+
+<details class="sc-answer">
+<summary>Q3. DNS キャッシュポイズニングへの根本対策は何か。</summary>
+
+**A.** DNSSEC。応答に CA ではない **権威 DNS による署名** を付与し、検証側が改ざんを検出できる。
+</details>
+
+→ 次は [Web セキュリティ](/SecuritySpecialist/topics/web/) へ。

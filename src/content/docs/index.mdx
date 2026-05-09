@@ -1,0 +1,54 @@
+---
+title: 情報処理安全確保支援士 学習サイト
+description: IPA 情報処理安全確保支援士試験 (SC) の解説・過去問・類似問題集
+template: splash
+hero:
+  tagline: 合格に必要な「考え方」と「型」を、図と過去問で身につける
+  actions:
+    - text: 試験概要を見る
+      link: /SecuritySpecialist/intro/about-exam/
+      icon: right-arrow
+      variant: primary
+    - text: 学習ロードマップ
+      link: /SecuritySpecialist/intro/roadmap/
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## このサイトの構成
+
+<CardGrid stagger>
+  <Card title="解説 (技術領域)" icon="setting">
+    暗号・認証・ネットワーク・Web セキュリティを、攻撃の流れまで含めて図解。
+  </Card>
+  <Card title="解説 (法令・規格)" icon="document">
+    個人情報保護法、不正アクセス禁止法、ISMS、NIST SP800 系を試験で問われる切り口でまとめます。
+  </Card>
+  <Card title="解説 (マネジメント)" icon="puzzle">
+    CSIRT 体制、インシデント対応の手順、リスクアセスメント、監査の論点を整理。
+  </Card>
+  <Card title="午後問題対策" icon="pencil">
+    時間配分、問題文の読み方、記述式の書き方を、実問題で演習。
+  </Card>
+  <Card title="過去問 (H21〜R7)" icon="open-book">
+    IPA が公開している全過去問を解説付きで掲載。出典明記の上で再構成。
+  </Card>
+  <Card title="類似テスト" icon="rocket">
+    本番形式に揃えた独自の演習問題と模範解答。弱点分野を集中演習。
+  </Card>
+</CardGrid>
+
+## 過去問掲載について
+
+IPA 公式の[過去問題ページ](https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html)に基づき、
+試験問題・解答例・採点講評は **許諾・使用料不要** で掲載しています。
+個別ページに「出典: IPA 情報処理安全確保支援士試験 令和X年Y期」を明記しています。
+
+## このサイトを使うときの心構え
+
+- 暗記より **「なぜそうなるか」を説明できる状態** を目指す
+- 午後問題は問題文の**条件**から逃げないこと。条件は答えのヒントです
+- 法令・規格は条文番号より **目的と適用範囲** を覚えると応用が利きます
+
+→ まずは [試験概要](/SecuritySpecialist/intro/about-exam/) からどうぞ。

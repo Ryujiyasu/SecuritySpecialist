@@ -1,0 +1,192 @@
+---
+title: Web セキュリティ
+description: XSS / CSRF / SQLi / セッション管理 / OWASP Top 10 を、攻撃の流れと対策で
+---
+
+import Mermaid from '../../../components/Mermaid.astro';
+
+## 試験で頻出する Web 攻撃マトリクス
+
+| 攻撃 | 影響範囲 | 根本原因 | 一次対策 |
+| --- | --- | --- | --- |
+| XSS (反射/格納/DOM) | 利用者ブラウザでの任意 JS 実行 | 出力時のエスケープ不足 | **コンテキスト別エスケープ** + CSP |
+| CSRF | 利用者の意図しない状態変更 | リクエストの送信元検証不足 | **CSRF トークン** + SameSite Cookie |
+| SQLi | DB の任意操作・情報漏洩 | クエリ組立時の連結 | **プレースホルダ (バインド機構)** |
+| OS コマンドインジェクション | サーバ任意コード実行 | shell へのユーザ入力連結 | API 直接呼出/エスケープ |
+| SSRF | 内部リソースへの間接アクセス | サーバ側 HTTP クライアントの URL 検証不足 | URL allowlist + IP 解決後の検証 |
+| ディレクトリトラバーサル | サーバ任意ファイル読取 | パス連結時の検証不足 | 正規化 + 許可ディレクトリ判定 |
+
+---
+
+## XSS (Cross-Site Scripting)
+
+### 反射型 XSS
+
+<Mermaid code={`sequenceDiagram
+  autonumber
+  participant V as 被害者
+  participant A as 攻撃者
+  participant W as 脆弱な Web
+  A->>V: 細工 URL を送付<br/>https://w.example/search?q=&lt;script&gt;...&lt;/script&gt;
+  V->>W: クリックでアクセス
+  W->>V: 検索結果ページ<br/>(q を**エスケープせず**埋込)
+  Note over V: ブラウザで攻撃者の JS が実行<br/>Cookie 窃取 / 偽フォーム表示
+  V-->>A: Cookie を送信
+`} />
+
+### 格納型 XSS
+
+<Mermaid code={`sequenceDiagram
+  autonumber
+  participant A as 攻撃者
+  participant W as 脆弱な Web (掲示板)
+  participant V as 一般ユーザ
+  A->>W: 投稿に &lt;script&gt;... を含める
+  Note over W: DB に保存
+  V->>W: 掲示板閲覧
+  W->>V: 攻撃者の投稿入り HTML
+  Note over V: ブラウザで JS が実行
+`} />
+
+### 対策の優先度
+
+1. **出力時エスケープ** (HTML 本文 / 属性 / JS 文字列 / URL でエスケープ規則が異なる)
+2. **Content Security Policy (CSP)** で `script-src` を制限
+3. Cookie に `HttpOnly` を付与 (JS から `document.cookie` で読めなくする)
+4. テンプレートエンジンの自動エスケープを **明示的に外さない**
+
+<div class="sc-trap">
+午後で「XSS 対策として `&lt;` `&gt;` を `&amp;lt;` `&amp;gt;` に変換した。これで完全か？」と問われたら、
+**「不完全」が正解**。属性値に挿入するなら `"` も、JS 文字列なら `\\` `'` も必要。
+**コンテキストごとの正しいエスケープ**が答え。
+</div>
+
+---
+
+## CSRF (Cross-Site Request Forgery)
+
+<Mermaid code={`sequenceDiagram
+  autonumber
+  participant V as 被害者<br/>(銀行ログイン中)
+  participant B as 銀行サイト
+  participant A as 攻撃サイト
+  V->>B: ログイン → セッション Cookie 保存
+  V->>A: 攻撃サイトへ別タブで訪問
+  A->>V: 自動送信フォーム HTML を返す<br/>action=https://bank/transfer
+  V->>B: 自動送信 (Cookie 付き)
+  Note over B: 認証済みのリクエストとして処理
+  B->>V: 振込完了
+`} />
+
+### 対策
+
+1. **CSRF トークン** (フォームに埋込み、サーバ側で検証)
+2. **SameSite Cookie** (`SameSite=Lax` または `Strict`)
+3. Origin/Referer ヘッダの検証 (補助)
+
+<div class="sc-key">
+SameSite=Lax は **クロスサイトの POST を自動で送らない** が、トップレベル GET は送る。
+状態変更は POST にし、SameSite=Lax を付ける、というのが現代の基本。
+</div>
+
+---
+
+## SQL インジェクション
+
+<Mermaid code={`flowchart LR
+  U[ユーザ入力<br/>id=1' OR '1'='1] -->|文字列連結| Q[組立クエリ<br/>SELECT * FROM users<br/>WHERE id='1' OR '1'='1']
+  Q --> D[(DB)]
+  D --> R[全レコード取得]
+  style Q fill:#ffd6d6
+`} />
+
+### 対策の本命: プレースホルダ (バインド機構)
+
+```sql
+-- NG (文字列連結)
+"SELECT * FROM users WHERE id='" + userInput + "'"
+
+-- OK (プレースホルダ)
+PreparedStatement: "SELECT * FROM users WHERE id=?"
+ps.setString(1, userInput);  -- DB 側で値として扱う
+```
+
+<div class="sc-trap">
+**エスケープ処理は補助対策**。プレースホルダが使えない箇所 (テーブル名、ORDER BY のカラム名)
+は **allowlist 方式** (許容値のリストと照合) が答え。
+「サニタイズで対応する」と書くと×。
+</div>
+
+---
+
+## セッション管理
+
+### セッション ID の安全要件
+
+| 要件 | 内容 |
+| --- | --- |
+| 推測困難性 | **CSPRNG** で生成、十分な長さ (例: 128 bit) |
+| Cookie 属性 | `Secure` (HTTPS 必須), `HttpOnly` (JS 不可), `SameSite=Lax` 以上 |
+| ライフサイクル | ログイン時 **再生成**、ログアウトで破棄 |
+| タイムアウト | アイドル/絶対の両方を設定 |
+
+### セッション固定 (Session Fixation) 攻撃
+
+<Mermaid code={`sequenceDiagram
+  autonumber
+  participant A as 攻撃者
+  participant V as 被害者
+  participant W as Web
+  A->>W: アクセスしてセッション ID 取得 (SID=X)
+  A->>V: 罠 URL でセッション ID を送付<br/>https://w.example/?SID=X
+  V->>W: そのまま受け入れてログイン
+  Note over W: ログイン後も SID=X のまま<br/>(再生成しない実装)
+  A->>W: SID=X でアクセス → V としてログイン状態
+`} />
+
+**対策**: **ログイン成功時にセッション ID を必ず再生成する**。
+
+---
+
+## OWASP Top 10 (2025 版概要)
+
+試験での参照頻度が高いランキング。順位より**カテゴリ名と典型例**を覚える。
+
+1. Broken Access Control (権限制御の不備)
+2. Cryptographic Failures (暗号利用の不備)
+3. Injection (SQLi/XSS など)
+4. Insecure Design (設計レベルの欠陥)
+5. Security Misconfiguration (設定不備)
+6. Vulnerable & Outdated Components (脆弱なライブラリ)
+7. Identification & Authentication Failures
+8. Software & Data Integrity Failures
+9. Security Logging & Monitoring Failures
+10. Server-Side Request Forgery (SSRF)
+
+---
+
+## 確認問題
+
+<details class="sc-answer">
+<summary>Q1. 反射型 XSS と格納型 XSS の決定的な違いを 1 つ。</summary>
+
+**A.** 攻撃ペイロードの保存場所。反射型は **URL 等のリクエストに含まれる** (被害者が罠 URL を踏む必要)。
+格納型は **サーバの DB 等に保存される** ため、対象ページを開いた利用者全員に被害が広がる。
+</details>
+
+<details class="sc-answer">
+<summary>Q2. CSRF トークンと SameSite Cookie はどちらか片方で十分か。</summary>
+
+**A.** 通常は **片方で技術的には防げる**が、両方を組み合わせるのが推奨。
+古いブラウザや SameSite を解釈しないクライアントへのフォールバック、
+あるいは CSRF トークンが漏洩した場合の保険として、多層化する。
+</details>
+
+<details class="sc-answer">
+<summary>Q3. プレースホルダを使えば SQL インジェクションは絶対に防げると言えるか。</summary>
+
+**A.** いいえ。**識別子 (テーブル名・カラム名)** や **動的 ORDER BY** はプレースホルダ化できない。
+これらはアプリ側で **許可値の allowlist** と照合する必要がある。
+</details>
+
+→ 次は [個人情報保護法](/SecuritySpecialist/topics/law-pipa/) へ。
