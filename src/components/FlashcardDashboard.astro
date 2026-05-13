@@ -1,0 +1,318 @@
+---
+// フラッシュカード理解度ダッシュボード
+// 使い方: <FlashcardDashboard sets={[{id, label, total, href, tag?}, ...]} />
+// 各セットの localStorage (`sc-flashcards:<id>`) から覚えた数を集計
+const { sets } = Astro.props as {
+  sets: { id: string; label: string; total: number; href: string; tag?: string }[];
+};
+const setsJson = JSON.stringify(sets);
+---
+
+<div class="fcd-root" data-fcd-sets={setsJson}>
+  <div class="fcd-summary">
+    <div class="fcd-summary-num">
+      <span class="fcd-overall-known">0</span><span class="fcd-overall-total-wrap"> / <span class="fcd-overall-total">0</span></span>
+    </div>
+    <div class="fcd-summary-label">問 覚えた</div>
+    <div class="fcd-ring">
+      <svg viewBox="0 0 36 36" class="fcd-ring-svg" aria-hidden="true">
+        <path class="fcd-ring-bg" d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31" />
+        <path class="fcd-ring-fg" d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31" />
+      </svg>
+      <div class="fcd-ring-text"><span class="fcd-overall-pct">0</span>%</div>
+    </div>
+  </div>
+
+  <ul class="fcd-list">
+    {sets.map((s) => (
+      <li class="fcd-item" data-fcd-id={s.id}>
+        <a class="fcd-item-link" href={s.href}>
+          <div class="fcd-item-head">
+            <span class="fcd-item-label">{s.label}</span>
+            {s.tag && <span class="fcd-item-tag">{s.tag}</span>}
+          </div>
+          <div class="fcd-item-bar">
+            <span class="fcd-item-fill"></span>
+          </div>
+          <div class="fcd-item-meta">
+            <span class="fcd-item-num"><span class="fcd-item-known">0</span> / {s.total}</span>
+            <span class="fcd-item-pct">0%</span>
+          </div>
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  <div class="fcd-tools">
+    <button type="button" class="fcd-reset-all">全セットの進捗をリセット</button>
+  </div>
+</div>
+
+<script>
+  type SetDef = { id: string; label: string; total: number; href: string; tag?: string };
+
+  const initOne = (root: HTMLElement) => {
+    if (root.dataset.fcdInit === '1') return;
+    root.dataset.fcdInit = '1';
+
+    let sets: SetDef[] = [];
+    try {
+      sets = JSON.parse(root.dataset.fcdSets || '[]');
+    } catch {
+      sets = [];
+    }
+
+    const knownOf = (id: string, total: number): number => {
+      try {
+        const raw = localStorage.getItem(`sc-flashcards:${id}`);
+        if (!raw) return 0;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed?.known)) return 0;
+        const valid = parsed.known.filter((i: number) => Number.isInteger(i) && i >= 0 && i < total);
+        return new Set(valid).size;
+      } catch {
+        return 0;
+      }
+    };
+
+    const render = () => {
+      let overallKnown = 0;
+      let overallTotal = 0;
+      sets.forEach((s) => {
+        const k = knownOf(s.id, s.total);
+        overallKnown += k;
+        overallTotal += s.total;
+        const li = root.querySelector(`.fcd-item[data-fcd-id="${CSS.escape(s.id)}"]`);
+        if (!li) return;
+        const pct = s.total === 0 ? 0 : Math.round((k / s.total) * 100);
+        (li.querySelector('.fcd-item-known') as HTMLElement).textContent = String(k);
+        (li.querySelector('.fcd-item-pct') as HTMLElement).textContent = pct + '%';
+        const fill = li.querySelector('.fcd-item-fill') as HTMLElement;
+        fill.style.width = pct + '%';
+        li.classList.toggle('fcd-done', pct === 100 && s.total > 0);
+      });
+
+      (root.querySelector('.fcd-overall-known') as HTMLElement).textContent = String(overallKnown);
+      (root.querySelector('.fcd-overall-total') as HTMLElement).textContent = String(overallTotal);
+      const overallPct = overallTotal === 0 ? 0 : Math.round((overallKnown / overallTotal) * 100);
+      (root.querySelector('.fcd-overall-pct') as HTMLElement).textContent = String(overallPct);
+      const fg = root.querySelector('.fcd-ring-fg') as SVGPathElement;
+      // 半径15.5の周長 = 2 * PI * 15.5 ≈ 97.39
+      const C = 97.39;
+      fg.style.strokeDasharray = `${(C * overallPct) / 100} ${C}`;
+    };
+
+    render();
+
+    // 他タブで更新された場合
+    window.addEventListener('storage', (e) => {
+      if (e.key && e.key.startsWith('sc-flashcards:')) render();
+    });
+    // ページ復帰時 (BFCache 含む)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') render();
+    });
+    window.addEventListener('pageshow', render);
+
+    const btnReset = root.querySelector('.fcd-reset-all') as HTMLButtonElement | null;
+    btnReset?.addEventListener('click', () => {
+      if (!confirm('全フラッシュカードの「覚えた」を消しますか?')) return;
+      sets.forEach((s) => {
+        try {
+          localStorage.removeItem(`sc-flashcards:${s.id}`);
+        } catch {
+          /* noop */
+        }
+      });
+      render();
+    });
+  };
+
+  const initAll = () => {
+    document.querySelectorAll<HTMLElement>('.fcd-root').forEach(initOne);
+  };
+
+  initAll();
+  document.addEventListener('astro:after-swap', initAll);
+</script>
+
+<style>
+  .fcd-root {
+    margin: 1.5rem 0 2rem;
+    border: 1px solid var(--sc-card-border);
+    border-radius: 16px;
+    background: var(--sc-card);
+    padding: 1.25rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  }
+
+  .fcd-summary {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--sc-card-border);
+  }
+  .fcd-summary-num {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--sc-accent-high);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .fcd-overall-total-wrap {
+    color: var(--sc-muted);
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+  .fcd-summary-label {
+    grid-column: 1;
+    color: var(--sc-muted);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+  }
+  .fcd-ring {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    position: relative;
+    width: 72px;
+    height: 72px;
+  }
+  .fcd-ring-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  .fcd-ring-bg,
+  .fcd-ring-fg {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+  .fcd-ring-bg {
+    stroke: var(--sc-card-border);
+  }
+  .fcd-ring-fg {
+    stroke: var(--sc-accent);
+    stroke-dasharray: 0 100;
+    transition: stroke-dasharray 320ms ease;
+  }
+  .fcd-ring-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: var(--sc-accent-high);
+  }
+
+  .fcd-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .fcd-item {
+    margin: 0;
+  }
+  .fcd-item-link {
+    display: block;
+    padding: 0.75rem 0.875rem;
+    border: 1px solid var(--sc-card-border);
+    border-radius: 12px;
+    background: var(--sc-bg-paper);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 160ms ease, transform 80ms ease, box-shadow 160ms ease;
+  }
+  .fcd-item-link:hover {
+    border-color: var(--sc-accent);
+    box-shadow: 0 4px 12px var(--sc-accent-soft);
+  }
+  .fcd-item-link:active {
+    transform: scale(0.997);
+  }
+  .fcd-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .fcd-item-label {
+    font-weight: 700;
+    font-size: 0.98rem;
+  }
+  .fcd-item-tag {
+    background: var(--sc-accent-soft);
+    color: var(--sc-accent-high);
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+  .fcd-item-bar {
+    height: 6px;
+    background: var(--sc-card-border);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .fcd-item-fill {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--sc-accent), var(--sc-accent-high));
+    transition: width 320ms ease;
+  }
+  .fcd-item-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.375rem;
+    font-size: 0.78rem;
+    color: var(--sc-muted);
+  }
+  .fcd-item-pct {
+    font-weight: 700;
+    color: var(--sc-accent-high);
+  }
+  .fcd-item.fcd-done .fcd-item-link {
+    border-color: var(--sc-ok);
+    background: var(--sc-ok-soft);
+  }
+  .fcd-item.fcd-done .fcd-item-pct {
+    color: var(--sc-ok);
+  }
+  .fcd-item.fcd-done .fcd-item-fill {
+    background: linear-gradient(90deg, var(--sc-ok), var(--sc-ok));
+  }
+  .fcd-item.fcd-done .fcd-item-label::after {
+    content: ' ✓';
+    color: var(--sc-ok);
+  }
+
+  .fcd-tools {
+    margin-top: 1rem;
+    text-align: right;
+  }
+  .fcd-reset-all {
+    appearance: none;
+    background: transparent;
+    color: var(--sc-muted);
+    border: 1px solid var(--sc-card-border);
+    padding: 0.375rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+  .fcd-reset-all:hover {
+    color: var(--sc-warn);
+    border-color: var(--sc-warn);
+  }
+</style>

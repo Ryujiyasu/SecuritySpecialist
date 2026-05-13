@@ -1,0 +1,55 @@
+---
+title: 一問一答 暗号と認証 (基礎 30 問)
+description: 共通鍵 / 公開鍵 / ハッシュ / TLS / PKI / OAuth / OIDC / FIDO の基礎用語をフラッシュカードで暗記
+---
+
+import Flashcards from '../../../../components/Flashcards.astro';
+
+スマホで気軽に回せる、**暗号・認証の基礎用語** 30 問です。
+- **タップ**でカードを反転 (Q ⇄ A)
+- **覚えた / もう一度** で分類 → 1 周終わったら **「復習だけもう一周」** で弱点を潰せます
+- 進捗 (覚えた状態) はブラウザに保存されます
+
+<Flashcards
+  id="crypto-auth-basic"
+  cards={[
+    { tag: '暗号方式', q: '共通鍵暗号と公開鍵暗号、速度が速いのはどちら? おおよそ何倍?', a: '共通鍵暗号が速い。公開鍵暗号より概ね 100〜1,000 倍以上速いため、大容量データの暗号化は共通鍵が担う。' },
+    { tag: '暗号方式', q: 'n 人の組織で全員と通信する時、共通鍵暗号で必要な鍵の数は?', a: 'n × (n - 1) / 2 個。例: 100 人なら 4,950 個。鍵管理コストが膨らむのが共通鍵の弱点。' },
+    { tag: '暗号方式', q: 'n 人の組織で公開鍵暗号を使う時、必要な鍵の数は?', a: '2n 個 (各人が公開鍵と秘密鍵を 1 組ずつ持つ)。鍵管理がスケールするのが公開鍵の強み。' },
+    { tag: '共通鍵', q: 'AES の代表的な鍵長 3 つは?', a: '128 / 192 / 256 bit。SC 試験では AES-128 以上が「現代的に安全」と扱われる。' },
+    { tag: '共通鍵', q: 'ブロック暗号でなくストリーム暗号の代表例は?', a: 'ChaCha20 (ChaCha20-Poly1305 として AEAD で使われる)。モバイル/低リソース環境で AES より高速になる場合がある。' },
+    { tag: '公開鍵', q: 'RSA の安全性が根拠とする数学的に難しい問題は?', a: '大きな合成数の素因数分解問題。' },
+    { tag: '公開鍵', q: 'ECC (楕円曲線暗号) の安全性が根拠とする問題は?', a: '楕円曲線上の離散対数問題。RSA より短い鍵長で同等の強度 (例: ECC 256bit ≒ RSA 3072bit)。' },
+    { tag: 'ハッシュ', q: 'SC で「安全」とされるハッシュ関数の代表は?', a: 'SHA-256 / SHA-384 / SHA-512 (SHA-2 系) と SHA-3。MD5, SHA-1 は衝突攻撃が現実的で非推奨。' },
+    { tag: 'ハッシュ', q: 'メッセージ認証コード (MAC) の代表的方式とその構成は?', a: 'HMAC。ハッシュ関数と共有秘密鍵を組み合わせて、改ざん検知と送信者認証を行う (例: HMAC-SHA256)。' },
+    { tag: '認証 vs 認可', q: '認証 (Authentication) と認可 (Authorization) の違いを 1 行で。', a: '認証は「誰か」を確認、認可は「何ができるか」を確認。' },
+    { tag: '認証 vs 認可', q: 'OAuth 2.0 と OIDC、それぞれ「認証」「認可」のどちら?', a: 'OAuth 2.0 は認可プロトコル、OIDC は OAuth 2.0 上に ID Token (JWT) を載せた認証プロトコル。' },
+    { tag: 'PKI', q: 'サーバ証明書のホスト名検証では CN と SAN のどちらを見る?', a: 'SAN (Subject Alternative Name)。CN によるホスト名判定はモダンブラウザでは無効化されている。' },
+    { tag: 'PKI', q: '証明書の失効を確認する 2 つの仕組みは?', a: 'OCSP (Online Certificate Status Protocol) と CRL (Certificate Revocation List)。' },
+    { tag: 'PKI', q: '中間 CA がサーバから配信されていないと何が起きる?', a: 'クライアントが信頼するルート CA までチェーンを辿れず、証明書エラー (チェーン不正) になる。' },
+    { tag: 'TLS', q: 'TLS 1.3 のハンドシェイクは何 RTT で完了する?', a: '1-RTT。TLS 1.2 は 2-RTT。1.3 は RSA 鍵交換やセッション ID を廃止し PFS を保証する (EC)DHE のみ。' },
+    { tag: 'TLS', q: 'PFS (Perfect Forward Secrecy) を実現する鍵交換方式は?', a: '(EC)DHE (Diffie-Hellman Ephemeral)。一時鍵を使うため、長期鍵が漏れても過去通信は復号されない。' },
+    { tag: 'TLS', q: 'TLS で「鍵交換 = 公開鍵 / データ暗号化 = 共通鍵」の組合せをなんと呼ぶ?', a: 'ハイブリッド暗号方式。公開鍵の安全性と共通鍵の速度を両立する。' },
+    { tag: 'パスワード', q: 'パスワードをハッシュ化する際に必要な要素 2 つは?', a: 'ソルト (Salt) とストレッチング (反復ハッシュ)。レインボーテーブル攻撃と総当たり攻撃を遅らせる。' },
+    { tag: 'パスワード', q: 'パスワードハッシュ用の現代的に推奨されるアルゴリズム 3 つは?', a: 'Argon2 (推奨), bcrypt, scrypt。GPU/ASIC 耐性を持つ。SHA-256 単体は不可。' },
+    { tag: '多要素', q: '多要素認証の 3 要素を答えよ。', a: '知識 (Something you know: パスワード) / 所持 (Something you have: スマホ・トークン) / 生体 (Something you are: 指紋・顔)。' },
+    { tag: 'OAuth/OIDC', q: 'OAuth 2.0 の認可コードフローで PKCE が防ぐ攻撃は?', a: '認可コード横取り攻撃。code_verifier を知らない攻撃者は code を token に交換できない。' },
+    { tag: 'OAuth/OIDC', q: 'OIDC の id_token が JWT 形式である理由は?', a: '署名により改ざん検知でき、iss/aud/exp/nonce 等のクレームで検証可能だから。RP は OP の公開鍵で署名を検証する。' },
+    { tag: 'OAuth/OIDC', q: 'OAuth 2.0 の state パラメータの目的は?', a: 'CSRF 防止。クライアントがリダイレクト前に発行した値が、リダイレクト後に一致するかを検証する。' },
+    { tag: 'FIDO/WebAuthn', q: 'FIDO2 / WebAuthn がフィッシング耐性を持つ理由は?', a: '認証器が RP ID (オリジン) を検証して署名するため、攻撃者の偽サイトには有効な署名を生成しない。' },
+    { tag: 'FIDO/WebAuthn', q: 'FIDO2 でサーバ側に保存するのは公開鍵と秘密鍵のどちら?', a: '公開鍵のみ。秘密鍵は認証器 (YubiKey / Touch ID 等) に閉じ込められ、サーバ側に秘密情報は持たない。' },
+    { tag: 'SAML', q: 'SAML で認証要求を受けて応答を返す側を何と呼ぶ?', a: 'IdP (Identity Provider)。要求を出す側は SP (Service Provider)。' },
+    { tag: 'セッション', q: 'セッション固定攻撃 (Session Fixation) の対策は?', a: '認証成功直後にセッション ID を再発行する (regenerate)。事前に攻撃者が発行した ID で固定化させない。' },
+    { tag: 'セッション', q: 'Cookie の HttpOnly 属性の効果は?', a: 'JavaScript (document.cookie) からのアクセスを禁止し、XSS でのセッション ID 窃取を防ぐ。' },
+    { tag: 'セッション', q: 'Cookie の Secure 属性と SameSite 属性の役割は?', a: 'Secure は HTTPS 接続のみ送信、SameSite は別オリジンからのリクエスト送信を制限 (CSRF 軽減)。' },
+    { tag: '署名', q: '電子署名で「秘密鍵で署名 / 公開鍵で検証」の順序が成立する理由は?', a: '本人しか知らない秘密鍵で署名し、公開鍵で検証することで「署名者の真正性」と「メッセージの完全性」を保証できるから。' },
+  ]}
+/>
+
+## 仕上げの確認
+
+このセットがすべて「覚えた」になったら、次は実戦演習へ。
+
+- [類似テスト Set 01 (Web 認可 + サプライチェーン)](/SecuritySpecialist/practice/set-01-web/)
+- [暗号と認証 (解説ページ)](/SecuritySpecialist/topics/crypto-auth/)
+- [一問一答 一覧 / 理解度ダッシュボード](/SecuritySpecialist/practice/)

@@ -5,13 +5,18 @@ template: splash
 hero:
   tagline: 合格に必要な「考え方」と「型」を、図と過去問で身につける
   actions:
-    - text: 試験概要を見る
-      link: /SecuritySpecialist/intro/about-exam/
+    - text: 一問一答を始める (スマホ推奨)
+      link: /SecuritySpecialist/practice/flashcards/crypto-auth/
       icon: right-arrow
       variant: primary
+    - text: 試験概要
+      link: /SecuritySpecialist/intro/about-exam/
+      icon: external
+      variant: minimal
     - text: 学習ロードマップ
       link: /SecuritySpecialist/intro/roadmap/
       icon: external
+      variant: minimal
 ---
 
 import { LinkCard, CardGrid } from '@astrojs/starlight/components';
@@ -43,6 +48,11 @@ import { LinkCard, CardGrid } from '@astrojs/starlight/components';
     title="過去問 (H21〜R7)"
     description="IPA が公開している全過去問を解説付きで掲載。出典明記の上で再構成。"
     href="/SecuritySpecialist/past-exams/"
+  />
+  <LinkCard
+    title="一問一答 (スマホ向け)"
+    description="基礎用語のフラッシュカード。タップで答え、覚えた問題を自動で除外。理解度ダッシュボード付き。"
+    href="/SecuritySpecialist/practice/flashcards/crypto-auth/"
   />
   <LinkCard
     title="類似テスト"
