@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ryujiyasu.github.io/SecuritySpecialist/sitemap-index.xml
+Sitemap: https://security-specialist.vercel.app/sitemap-index.xml

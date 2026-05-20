@@ -3,17 +3,18 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
+import vercel from '@astrojs/vercel';
 
-const SITE = 'https://ryujiyasu.github.io';
-const BASE = '/SecuritySpecialist';
-const FULL = `${SITE}${BASE}`;
+const SITE = process.env.SITE_URL ?? 'https://security-specialist.vercel.app';
+const FULL = SITE;
 const TITLE = '情報処理安全確保支援士 学習サイト';
 const DESC = 'IPA 情報処理安全確保支援士試験 (SC) を最短で突破するための解説・過去問・類似テスト集。法令・暗号・ネットワーク・Web セキュリティ・マネジメントを図解で整理。';
 
 // https://astro.build/config
 export default defineConfig({
   site: SITE,
-  base: BASE,
+  output: 'static',
+  adapter: vercel(),
   trailingSlash: 'always',
   integrations: [
     starlight({

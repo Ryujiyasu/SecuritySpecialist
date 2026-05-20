@@ -1,0 +1,436 @@
+---
+// 記述式 答案 AI 添削コンポーネント
+// 使い方:
+//   <EssayGrader
+//     id="r6-aki-q1-su2"
+//     question="..."
+//     context="..."   (任意: 問題文の前提)
+//     charLimit={50}
+//     hint="..."      (任意: ヒント)
+//   />
+const { id, question, context = '', charLimit = 50, hint = '' } = Astro.props as {
+  id: string;
+  question: string;
+  context?: string;
+  charLimit?: number;
+  hint?: string;
+};
+const clientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID ?? '';
+---
+
+<div
+  class="eg-root"
+  data-eg-id={id}
+  data-eg-question={question}
+  data-eg-context={context}
+  data-eg-char-limit={charLimit}
+  data-eg-client-id={clientId}
+>
+  <div class="eg-question">
+    {context && <div class="eg-context">{context}</div>}
+    <div class="eg-q-label">設問</div>
+    <div class="eg-q-text">{question}</div>
+    <div class="eg-q-meta">
+      <span class="eg-limit">{charLimit} 字以内</span>
+      {hint && <span class="eg-hint">💡 {hint}</span>}
+    </div>
+  </div>
+
+  <div class="eg-auth" data-eg-auth>
+    <p class="eg-auth-msg">AI 添削を受けるには Google サインインが必要です（メールアドレスのみ取得します）</p>
+    <div class="eg-signin-btn"></div>
+  </div>
+
+  <div class="eg-form" data-eg-form hidden>
+    <div class="eg-user-info">
+      <span class="eg-user-email" data-eg-email></span>
+      <button type="button" class="eg-signout" data-eg-signout>サインアウト</button>
+    </div>
+    <textarea
+      class="eg-answer"
+      data-eg-answer
+      placeholder="ここに答案を入力（例: 〜こと。／〜から。）"
+      rows="4"
+      maxlength="500"
+    ></textarea>
+    <div class="eg-count-row">
+      <span class="eg-count" data-eg-count>0 字</span>
+      <button type="button" class="eg-submit" data-eg-submit>AI 添削をリクエスト</button>
+    </div>
+  </div>
+
+  <div class="eg-result" data-eg-result hidden></div>
+</div>
+
+<style>
+.eg-root {
+  background: var(--sl-color-bg-nav, #f8f9fc);
+  border: 1px solid var(--sl-color-hairline, #e4e7ee);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+}
+.eg-question { margin-bottom: 1rem; }
+.eg-context {
+  background: var(--sl-color-bg, #fff);
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--sl-color-accent, #0d7a8a);
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  font-size: 0.92rem;
+  white-space: pre-wrap;
+}
+.eg-q-label {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: var(--sl-color-accent, #0d7a8a);
+  margin-bottom: 0.25rem;
+}
+.eg-q-text { font-weight: 600; line-height: 1.6; }
+.eg-q-meta {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.eg-limit {
+  background: var(--sl-color-accent, #0d7a8a);
+  color: white;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.eg-hint { color: var(--sl-color-text-accent, #555); }
+
+.eg-auth { text-align: center; padding: 1rem; }
+.eg-auth-msg {
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+  color: var(--sl-color-text-accent, #555);
+}
+.eg-signin-btn { display: flex; justify-content: center; }
+
+.eg-user-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+.eg-user-email { color: var(--sl-color-text-accent, #555); }
+.eg-signout {
+  background: transparent;
+  border: 1px solid var(--sl-color-hairline, #e4e7ee);
+  color: var(--sl-color-text-accent, #555);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.eg-answer {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--sl-color-hairline, #e4e7ee);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+  resize: vertical;
+  box-sizing: border-box;
+  background: var(--sl-color-bg, #fff);
+  color: var(--sl-color-text, #111);
+}
+.eg-count-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+.eg-count { font-size: 0.85rem; color: var(--sl-color-text-accent, #555); }
+.eg-count.over { color: #d33; font-weight: bold; }
+.eg-submit {
+  background: var(--sl-color-accent, #0d7a8a);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.eg-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.eg-result {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--sl-color-bg, #fff);
+  border-radius: 8px;
+  border: 1px solid var(--sl-color-hairline, #e4e7ee);
+}
+.eg-score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--sl-color-hairline, #e4e7ee);
+}
+.eg-score {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--sl-color-accent, #0d7a8a);
+}
+.eg-rank {
+  font-size: 1.2rem;
+  font-weight: bold;
+  padding: 0.15rem 0.6rem;
+  border-radius: 6px;
+  background: var(--sl-color-accent, #0d7a8a);
+  color: white;
+}
+.eg-rank.rank-A { background: #2a8f3e; }
+.eg-rank.rank-B { background: #0d7a8a; }
+.eg-rank.rank-C { background: #c97b00; }
+.eg-rank.rank-D { background: #c0392b; }
+.eg-section { margin: 0.75rem 0; }
+.eg-section h4 {
+  font-size: 0.9rem;
+  margin: 0 0 0.35rem 0;
+  color: var(--sl-color-text-accent, #555);
+}
+.eg-section ul { margin: 0; padding-left: 1.2rem; }
+.eg-section li { margin: 0.15rem 0; line-height: 1.5; }
+.eg-model {
+  background: #eef7f8;
+  padding: 0.65rem 0.85rem;
+  border-radius: 6px;
+  font-weight: 600;
+  white-space: pre-wrap;
+}
+:global([data-theme='dark']) .eg-model { background: #1c3a3f; }
+.eg-comment {
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--sl-color-text-accent, #555);
+}
+.eg-error {
+  color: #c0392b;
+  padding: 0.5rem;
+  background: #fdecea;
+  border-radius: 6px;
+}
+:global([data-theme='dark']) .eg-error { background: #3b1a17; }
+.eg-loading {
+  text-align: center;
+  padding: 1rem;
+  color: var(--sl-color-text-accent, #555);
+}
+.eg-loading::after {
+  content: '';
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-left: 0.5em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -0.15em;
+  animation: eg-spin 0.8s linear infinite;
+}
+@keyframes eg-spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+declare global {
+  interface Window {
+    google?: any;
+    __egInitialized?: boolean;
+    __egInstances?: Array<() => void>;
+  }
+}
+
+const GIS_SRC = 'https://accounts.google.com/gsi/client';
+const TOKEN_KEY = 'eg-id-token';
+const EMAIL_KEY = 'eg-email';
+
+function loadGis(): Promise<void> {
+  if (window.google?.accounts?.id) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${GIS_SRC}"]`);
+    if (existing) {
+      existing.addEventListener('load', () => resolve());
+      return;
+    }
+    const s = document.createElement('script');
+    s.src = GIS_SRC;
+    s.async = true;
+    s.defer = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('GIS load failed'));
+    document.head.appendChild(s);
+  });
+}
+
+function decodeJwt(token: string): { email?: string; exp?: number } {
+  try {
+    const payload = token.split('.')[1];
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(decodeURIComponent(escape(json)));
+  } catch {
+    return {};
+  }
+}
+
+function tokenValid(token: string | null): boolean {
+  if (!token) return false;
+  const { exp } = decodeJwt(token);
+  return !!exp && exp * 1000 > Date.now() + 30_000;
+}
+
+async function init(root: HTMLElement) {
+  const clientId = root.dataset.egClientId;
+  const question = root.dataset.egQuestion ?? '';
+  const context = root.dataset.egContext ?? '';
+  const charLimit = Number(root.dataset.egCharLimit ?? '50');
+
+  const authEl = root.querySelector<HTMLElement>('[data-eg-auth]')!;
+  const signinBtn = root.querySelector<HTMLElement>('.eg-signin-btn')!;
+  const formEl = root.querySelector<HTMLElement>('[data-eg-form]')!;
+  const emailEl = root.querySelector<HTMLElement>('[data-eg-email]')!;
+  const signoutBtn = root.querySelector<HTMLButtonElement>('[data-eg-signout]')!;
+  const answerEl = root.querySelector<HTMLTextAreaElement>('[data-eg-answer]')!;
+  const countEl = root.querySelector<HTMLElement>('[data-eg-count]')!;
+  const submitBtn = root.querySelector<HTMLButtonElement>('[data-eg-submit]')!;
+  const resultEl = root.querySelector<HTMLElement>('[data-eg-result]')!;
+
+  if (!clientId) {
+    authEl.innerHTML = '<p class="eg-error">PUBLIC_GOOGLE_CLIENT_ID が設定されていません</p>';
+    return;
+  }
+
+  const showSignedIn = (email: string) => {
+    emailEl.textContent = email;
+    authEl.hidden = true;
+    formEl.hidden = false;
+  };
+  const showSignedOut = () => {
+    authEl.hidden = false;
+    formEl.hidden = true;
+  };
+
+  // Restore session
+  const savedToken = sessionStorage.getItem(TOKEN_KEY);
+  const savedEmail = sessionStorage.getItem(EMAIL_KEY);
+  if (tokenValid(savedToken) && savedEmail) {
+    showSignedIn(savedEmail);
+  }
+
+  try {
+    await loadGis();
+  } catch {
+    authEl.innerHTML = '<p class="eg-error">Google サインインの読み込みに失敗しました</p>';
+    return;
+  }
+
+  window.google.accounts.id.initialize({
+    client_id: clientId,
+    callback: (response: { credential: string }) => {
+      const token = response.credential;
+      const { email } = decodeJwt(token);
+      if (!email) return;
+      sessionStorage.setItem(TOKEN_KEY, token);
+      sessionStorage.setItem(EMAIL_KEY, email);
+      showSignedIn(email);
+    },
+    auto_select: false,
+  });
+  window.google.accounts.id.renderButton(signinBtn, {
+    theme: 'filled_blue',
+    size: 'large',
+    text: 'signin_with',
+    shape: 'pill',
+  });
+
+  signoutBtn.addEventListener('click', () => {
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(EMAIL_KEY);
+    window.google.accounts.id.disableAutoSelect();
+    showSignedOut();
+  });
+
+  const updateCount = () => {
+    const n = answerEl.value.length;
+    countEl.textContent = `${n} 字`;
+    countEl.classList.toggle('over', n > charLimit);
+  };
+  answerEl.addEventListener('input', updateCount);
+  updateCount();
+
+  submitBtn.addEventListener('click', async () => {
+    const token = sessionStorage.getItem(TOKEN_KEY);
+    if (!tokenValid(token)) {
+      sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(EMAIL_KEY);
+      showSignedOut();
+      return;
+    }
+    const userAnswer = answerEl.value.trim();
+    if (!userAnswer) {
+      resultEl.hidden = false;
+      resultEl.innerHTML = '<p class="eg-error">答案を入力してください</p>';
+      return;
+    }
+    submitBtn.disabled = true;
+    resultEl.hidden = false;
+    resultEl.innerHTML = '<div class="eg-loading">Gemini が添削中</div>';
+
+    try {
+      const res = await fetch('/api/grade/', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ question, context, charLimit, userAnswer }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      renderResult(resultEl, data.grading);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      resultEl.innerHTML = `<p class="eg-error">${msg}</p>`;
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+}
+
+function esc(s: unknown): string {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[c]!);
+}
+
+function renderResult(el: HTMLElement, g: any) {
+  const rank = (g.rank ?? '').toUpperCase();
+  const good = Array.isArray(g.good_points) ? g.good_points : [];
+  const bad = Array.isArray(g.improvements) ? g.improvements : [];
+  const missing = Array.isArray(g.key_terms_missing) ? g.key_terms_missing : [];
+  el.innerHTML = `
+    <div class="eg-score-row">
+      <div class="eg-score">${esc(g.score ?? 0)}</div>
+      <div class="eg-rank rank-${esc(rank)}">${esc(rank || '-')}</div>
+      <div style="font-size:0.85rem;color:var(--sl-color-text-accent,#555);">/ 100 点</div>
+    </div>
+    ${good.length ? `<div class="eg-section"><h4>👍 良かった点</h4><ul>${good.map((x: string) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+    ${bad.length ? `<div class="eg-section"><h4>📝 改善点</h4><ul>${bad.map((x: string) => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
+    ${missing.length ? `<div class="eg-section"><h4>🔑 含めるべきだったキーワード</h4><ul>${missing.map((x: string) => `<li><code>${esc(x)}</code></li>`).join('')}</ul></div>` : ''}
+    ${g.model_answer_example ? `<div class="eg-section"><h4>✨ 模範解答例</h4><div class="eg-model">${esc(g.model_answer_example)}</div></div>` : ''}
+    ${g.overall_comment ? `<div class="eg-section"><h4>💬 全体講評</h4><div class="eg-comment">${esc(g.overall_comment)}</div></div>` : ''}
+  `;
+}
+
+document.querySelectorAll<HTMLElement>('.eg-root').forEach((el) => {
+  init(el).catch((err) => console.error('[EssayGrader]', err));
+});
+</script>

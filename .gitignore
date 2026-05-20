@@ -15,7 +15,16 @@ pnpm-debug.log*
 
 # environment variables
 .env
-.env.production
+.env.*
+!.env.example
+
+# Google OAuth client secret (never commit)
+client_secret_*.json
+*.client_secret.json
+credentials.json
+
+# Vercel
+.vercel
 
 # macOS-specific files
 .DS_Store
